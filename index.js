@@ -42,6 +42,18 @@ async function loadDiceRoller() {
         return true;
     }
 
+    // Provide crypto.getRandomValues polyfill if needed
+    if (!window.crypto || typeof window.crypto.getRandomValues !== 'function') {
+        console.warn('Dice: crypto.getRandomValues not available, using Math.random fallback');
+        if (!window.crypto) window.crypto = {};
+        window.crypto.getRandomValues = function(array) {
+            for (let i = 0; i < array.length; i++) {
+                array[i] = Math.floor(Math.random() * 256);
+            }
+            return array;
+        };
+    }
+
     return new Promise((resolve, reject) => {
         const script = document.createElement('script');
         // Use relative path from the extension directory

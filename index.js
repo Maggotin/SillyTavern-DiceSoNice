@@ -13,10 +13,10 @@ const MODULE_NAME = 'dice';
 // Add script tags for dependencies
 function loadDependencies() {
     return new Promise((resolve, reject) => {
-        // Prefer local UMD bundle to avoid SRI/CDN issues
+        // Use CDN UMD bundle without SRI to avoid integrity blocking
         const scripts = [
             {
-                src: 'lib/rpg-dice-roller.umd.min.js',
+                src: 'https://cdn.jsdelivr.net/npm/@dice-roller/rpg-dice-roller@5.3.0/lib/umd/bundle.min.js',
             }
         ];
         

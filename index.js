@@ -269,21 +269,18 @@ function registerMacros() {
     try {
         const { registerMacro } = SillyTavern.getContext();
 
-        // Helper function for rolling dice
-        const rollDice = (args) => {
-            const input = String(args ?? '').trim();
-            
-            console.log('Dice (Advanced): Macro called with args:', args);
-            console.log('Dice (Advanced): Input after trim:', input);
-            
+        const rollDice = (...macroArgs) => {
+            console.log('Dice (Advanced): Macro args:', macroArgs);
+            const [formulaArg] = macroArgs.slice(-1); // try last argument first
+            const input = String(formulaArg ?? '').trim();
+            console.log('Dice (Advanced): Parsed input from args:', input);
             if (!input) {
-                console.log('Dice (Advanced): Empty input, returning error');
                 return '[Error: Empty dice formula]';
             }
 
             const formula = input.replace(/['"]/g, '');
-            console.log('Dice (Advanced): Parsed formula:', formula);
-            
+            console.log('Dice (Advanced): Clean formula:', formula);
+
             const DiceRoll = getDiceRoll();
             if (!DiceRoll) {
                 console.error('Dice (Advanced): DiceRoll constructor not found');
@@ -293,7 +290,7 @@ function registerMacros() {
             try {
                 const roll = new DiceRoll(formula);
                 const result = String(roll.total);
-                console.log('Dice (Advanced): Macro result for', formula, '=', result);
+                console.log('Dice (Advanced): Macro result for', formula, '=', result, '| output:', roll.output);
                 return result;
             } catch (error) {
                 console.error('Dice (Advanced): Macro roll failed for formula:', formula, error);
@@ -301,9 +298,9 @@ function registerMacros() {
             }
         };
 
-        // Register our advanced roller as 'rolls' (don't override built-in 'roll')
         registerMacro('rolls', rollDice);
-        console.log('Dice: Advanced "rolls" macro registered successfully');
+        registerMacro('rolls::{formula}', (nonce, formula) => rollDice(formula));
+        console.log('Dice: Advanced "rolls" macros registered (simple + arg variant)');
 
     } catch (error) {
         console.error('Dice: Error registering macros', error);
@@ -318,7 +315,7 @@ jQuery(async function () {
         await addDiceRollButton();
         registerFunctionTools();
         registerMacros();
-        SlashCommandParser.addCommandObject(SlashCommand.fromProps({
+          .addCommandObject(SlashCommand.fromProps({
             name: 'roll',
             aliases: ['r', 'rolls'],
             callback: (args, value) => {

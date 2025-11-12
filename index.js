@@ -56,15 +56,27 @@ async function loadDiceRoller() {
 
     return new Promise((resolve, reject) => {
         const script = document.createElement('script');
-        // Use relative path from the extension directory
-        script.src = 'scripts/extensions/third-party/SillyTavern-DiceSoNice/lib/rpg-dice-roller.umd.min.js';
+        // Get the current script's URL to determine the extension base path
+        const scripts = document.querySelectorAll('script[src*="SillyTavern-DiceSoNice"]');
+        let basePath = 'scripts/extensions/third-party/SillyTavern-DiceSoNice/';
+        
+        // Try to determine the actual base path from loaded scripts
+        if (scripts.length > 0) {
+            const scriptSrc = scripts[0].src;
+            const match = scriptSrc.match(/(.*\/SillyTavern-DiceSoNice\/)/);
+            if (match) {
+                basePath = match[1];
+            }
+        }
+        
+        script.src = basePath + 'lib/rpg-dice-roller.umd.min.js';
         script.async = false;
         script.onload = () => {
-            console.log('Dice: RPG Dice Roller loaded successfully');
+            console.log('Dice: RPG Dice Roller loaded successfully from', script.src);
             resolve(true);
         };
         script.onerror = (error) => {
-            console.error('Dice: Failed to load RPG Dice Roller', error);
+            console.error('Dice: Failed to load RPG Dice Roller from', script.src, error);
             reject(error);
         };
         document.head.appendChild(script);

@@ -41,6 +41,23 @@ function loadDependencies() {
     });
 }
 
+// Lazily resolve DiceRoll constructor from whatever global the UMD exposes
+function getDiceRollConstructor() {
+    const globalObj = (typeof window !== 'undefined') ? window : self;
+    // Common UMD globals seen in various builds
+    const candidates = [
+        () => globalObj.rpgDiceRoller && globalObj.rpgDiceRoller.DiceRoll,
+        () => globalObj.diceRoller && globalObj.diceRoller.DiceRoll,
+        () => globalObj.RPGDiceRoller && globalObj.RPGDiceRoller.DiceRoll,
+        () => globalObj.DiceRoll, // sometimes exported directly
+    ];
+    for (const pick of candidates) {
+        const ctor = pick();
+        if (typeof ctor === 'function') return ctor;
+    }
+    return null;
+}
+
 /**
  * Helper function to check if a string contains only digits
  * @param {string} str - The string to check
@@ -61,6 +78,11 @@ const droll = (() => {
      */
     function validate(formula) {
         try {
+            const DiceRoll = getDiceRollConstructor();
+            if (!DiceRoll) {
+                console.error('Dice DiceRoll constructor not found on global UMD export');
+                return false;
+            }
             // Reject overly complex formulas
             if (formula.length > 100) {
                 console.warn(`Formula too long: "${formula}"`);
@@ -74,7 +96,7 @@ const droll = (() => {
             if (/^\d+[+\-]\d+$/.test(formula)) return true;
             
             // Use RPG Dice Roller to validate
-            new rpgDiceRoller.DiceRoll(formula);
+            new DiceRoll(formula);
             return true;
         } catch (error) {
             console.error(`Invalid formula: "${formula}"`, error);
@@ -92,6 +114,12 @@ const droll = (() => {
         if (isDigitsOnly(formula)) {
             formula = `1d${formula}`;
         }
+
+        const DiceRoll = getDiceRollConstructor();
+        if (!DiceRoll) {
+            console.error('Dice DiceRoll constructor not found on global UMD export');
+            return false;
+        }
         
         // Handle 'd20' case (no leading number)
         if (formula.startsWith('d')) {
@@ -99,7 +127,7 @@ const droll = (() => {
         }
 
         try {
-            const diceRoll = new rpgDiceRoller.DiceRoll(formula);
+            const diceRoll = new DiceRoll(formula);
             const rollDetails = [];
             
             // Process all dice groups

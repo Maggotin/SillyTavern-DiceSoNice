@@ -267,22 +267,17 @@ function registerFunctionTools() {
 
 function registerMacros() {
     try {
-        const { registerMacro, registerRegexMacro, unregisterMacro } = SillyTavern.getContext();
-        const macroAvailable =
-            typeof registerRegexMacro === 'function' || typeof registerMacro === 'function';
-
-        if (!macroAvailable) {
-            console.debug('Dice: macros are not supported');
-            return;
-        }
-
-        const resolveFormula = (rawFormula) => {
-            const input = String(rawFormula ?? '').trim();
+        SillyTavern.getContext().registerMacro('rolls', (args) => {
+            const input = String(args ?? '').trim();
+            
+            console.log('Dice: Macro called with args:', args, 'formula:', input);
+            
             if (!input) {
                 return '[Error: Empty dice formula]';
             }
 
             const formula = input.replace(/['"]/g, '');
+            
             const DiceRoll = getDiceRoll();
             if (!DiceRoll) {
                 console.error('Dice: DiceRoll constructor not found');
@@ -291,35 +286,16 @@ function registerMacros() {
 
             try {
                 const roll = new DiceRoll(formula);
-                return String(roll.total);
+                const result = String(roll.total);
+                console.log('Dice: Macro result for', formula, '=', result);
+                // Return just the total for macro use
+                return result;
             } catch (error) {
                 console.error('Dice: Macro roll failed for formula:', formula, error);
                 return '[Invalid dice formula]';
             }
-        };
+        });
 
-        const safeUnregister = (name) => {
-            if (typeof unregisterMacro === 'function') {
-                try {
-                    unregisterMacro(name);
-                } catch (err) {
-                    console.debug(`Dice: macro ${name} was not registered`, err);
-                }
-            }
-        };
-
-        safeUnregister('roll');
-        safeUnregister('rolls');
-
-        if (typeof registerRegexMacro === 'function') {
-            const regexHandler = (_, captured) => resolveFormula(captured);
-            registerRegexMacro('roll', /{{\s*roll\s*[: ]\s*([^}]+)}}/gi, regexHandler);
-            registerRegexMacro('rolls', /{{\s*rolls\s*[: ]\s*([^}]+)}}/gi, regexHandler);
-        } else {
-            const macroHandler = (args) => resolveFormula(args);
-            registerMacro('roll', macroHandler);
-            registerMacro('rolls', macroHandler);
-        }
     } catch (error) {
         console.error('Dice: Error registering macros', error);
     }

@@ -315,7 +315,7 @@ jQuery(async function () {
         await addDiceRollButton();
         registerFunctionTools();
         registerMacros();
-          .addCommandObject(SlashCommand.fromProps({
+        SlashCommandParser.addCommandObject(SlashCommand.fromProps({
             name: 'roll',
             aliases: ['r', 'rolls'],
             callback: (args, value) => {

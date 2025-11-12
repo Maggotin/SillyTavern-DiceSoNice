@@ -275,8 +275,20 @@ function registerMacros() {
             }
 
             const formula = input.replace(/['"]/g, '');
-            const result = await doDiceRoll(formula, true);
-            return result;
+            
+            const DiceRoll = getDiceRoll();
+            if (!DiceRoll) {
+                return '[Dice roller not loaded]';
+            }
+
+            try {
+                const roll = new DiceRoll(formula);
+                // Return just the total for macro use
+                return String(roll.total);
+            } catch (error) {
+                console.error('Dice: Macro roll failed', error);
+                return '[Invalid dice formula]';
+            }
         });
 
     } catch (error) {

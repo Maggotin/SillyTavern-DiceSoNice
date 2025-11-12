@@ -279,15 +279,19 @@ function registerMacros() {
 
         // Register our advanced roller under the standard 'roll' name
         registerMacro('roll', (args) => {
+            // Args is the full string after the macro name
             const input = String(args ?? '').trim();
             
-            console.log('Dice (Advanced): Macro called with formula:', input);
+            console.log('Dice (Advanced): Macro called with args:', args);
+            console.log('Dice (Advanced): Input after trim:', input);
             
             if (!input) {
+                console.log('Dice (Advanced): Empty input, returning error');
                 return '[Error: Empty dice formula]';
             }
 
             const formula = input.replace(/['"]/g, '');
+            console.log('Dice (Advanced): Parsed formula:', formula);
             
             const DiceRoll = getDiceRoll();
             if (!DiceRoll) {
@@ -320,11 +324,7 @@ jQuery(async function () {
         
         await addDiceRollButton();
         registerFunctionTools();
-        
-        // Delay macro registration to ensure we override built-in macros
-        setTimeout(() => {
-            registerMacros();
-        }, 100);
+        registerMacros();
         SlashCommandParser.addCommandObject(SlashCommand.fromProps({
             name: 'roll',
             aliases: ['r', 'rolls'],

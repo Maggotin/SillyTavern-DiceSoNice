@@ -30,46 +30,32 @@ function loadDependencies() {
             // ignore; library will still try to use Math.random if available
         }
 
-        // Resolve the extension base URL from current script and load the local UMD bundle
-        let baseUrl = '';
-        try {
-            const candidates = [
-                document.currentScript,
-                ...Array.from(document.getElementsByTagName('script')),
-            ].filter(Boolean);
-            const me = candidates.find(s => (s.src || '').includes('index.js')) || candidates[0];
-            if (me && me.src) {
-                const url = new URL(me.src, window.location.href);
-                // drop everything after last '/'
-                baseUrl = url.href.substring(0, url.href.lastIndexOf('/') + 1);
-            }
-        } catch (_) {}
-        const diceUrl = baseUrl ? `${baseUrl}lib/rpg-dice-roller.umd.min.js` : 'lib/rpg-dice-roller.umd.min.js';
-
+        // Try multiple safe sources in order (CDN dist build first; fallback to alt CDN; then local)
         const scripts = [
-            {
-                src: diceUrl,
-            }
+            { src: 'https://cdn.jsdelivr.net/npm/@dice-roller/rpg-dice-roller@5.1.0/dist/dice-roller.umd.min.js' },
+            { src: 'https://unpkg.com/@dice-roller/rpg-dice-roller@5.1.0/dist/dice-roller.umd.min.js' },
+            { src: 'lib/rpg-dice-roller.umd.min.js' },
         ];
         
-        let loaded = 0;
-        scripts.forEach(scriptData => {
-            const script = document.createElement('script');
-            script.src = scriptData.src;
-            if (scriptData.integrity) {
-                script.integrity = scriptData.integrity;
+        function tryLoad(index) {
+            if (index >= scripts.length) {
+                reject(new Error('Failed to load rpg-dice-roller UMD from all sources'));
+                return;
             }
+            const { src } = scripts[index];
+            const script = document.createElement('script');
+            script.src = src;
             script.crossOrigin = 'anonymous';
             script.async = false;
-            script.onload = () => {
-                loaded++;
-                if (loaded === scripts.length) {
-                    resolve();
-                }
+            script.onload = () => resolve();
+            script.onerror = () => {
+                console.warn(`Dice: failed to load ${src}, trying next source...`);
+                tryLoad(index + 1);
             };
-            script.onerror = reject;
             document.head.appendChild(script);
-        });
+        }
+
+        tryLoad(0);
     });
 }
 

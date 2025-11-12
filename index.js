@@ -55,6 +55,27 @@ function getDiceRollConstructor() {
         const ctor = pick();
         if (typeof ctor === 'function') return ctor;
     }
+    // Fallback: scan global keys for an object exposing a constructible DiceRoll
+    try {
+        for (const key of Object.getOwnPropertyNames(globalObj)) {
+            const val = globalObj[key];
+            if (val && typeof val === 'object' && typeof val.DiceRoll === 'function') {
+                try {
+                    // Validate it is constructible
+                    const test = new val.DiceRoll('1d4');
+                    if (typeof test.total === 'number') return val.DiceRoll;
+                } catch (_) {
+                    // not the right one
+                }
+            }
+            if (typeof val === 'function' && /DiceRoll/i.test(key)) {
+                try {
+                    const test = new val('1d4');
+                    if (typeof test.total === 'number') return val;
+                } catch (_) {}
+            }
+        }
+    } catch (_) {}
     return null;
 }
 

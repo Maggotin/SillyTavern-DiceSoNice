@@ -1,7 +1,8 @@
 # Aegis Framework - Development and AI Guidance (not for distribution)
-.context/
-.cursor/
-log/
+/.context/
+/.cursor/
+/.history/
+/log/
 
 # Node modules (if any)
 node_modules/

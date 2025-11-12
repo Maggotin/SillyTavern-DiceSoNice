@@ -1,4 +1,4 @@
-# D-D-Dice
+# SillyTavern-DiceSoNice
 
 A comprehensive dice rolling extension for SillyTavern with support for standard and advanced dice notation.
 
@@ -7,7 +7,7 @@ A comprehensive dice rolling extension for SillyTavern with support for standard
 Install via the built-in "Download Extensions and Assets" tool. Or use a direct link:
 
 ```txt
-https://github.com/Maggotin/D-D-Dice
+https://github.com/Maggotin/SillyTavern-DiceSoNice
 ```
 
 ## How to use

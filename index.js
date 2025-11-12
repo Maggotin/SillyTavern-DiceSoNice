@@ -367,6 +367,6 @@ jQuery(async function () {
             ],
         }));
     } catch (error) {
-        console.error('Failed to load D&D Dice extension:', error);
+        console.error('Failed to load DiceSoNice extension:', error);
     }
 });

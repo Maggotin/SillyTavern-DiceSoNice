@@ -1,5 +1,5 @@
 {
-    "display_name": "D&D Dice",
+    "display_name": "DiceSoNice",
     "loading_order": 5,
     "requires": [],
     "optional": [],
@@ -7,6 +7,6 @@
     "css": "style.css",
     "author": "Maggotkin",
     "version": "2.0.0",
-    "homePage": "https://github.com/Maggotkin/D-D-Dice-Extension",
+    "homePage": "https://github.com/Maggotkin/SillyTavern-DiceSoNice-Extension",
     "auto_update": true
 }

@@ -35,8 +35,43 @@ function getSettings() {
     return extensionSettings[MODULE_NAME];
 }
 
+// Load RPG Dice Roller library
+async function loadDiceRoller() {
+    // Check if already loaded
+    if (window.rpgDiceRoller || window.dice) {
+        return true;
+    }
+
+    return new Promise((resolve, reject) => {
+        const script = document.createElement('script');
+        // Use relative path from the extension directory
+        script.src = 'scripts/extensions/third-party/SillyTavern-DiceSoNice/lib/rpg-dice-roller.umd.min.js';
+        script.async = false;
+        script.onload = () => {
+            console.log('Dice: RPG Dice Roller loaded successfully');
+            resolve(true);
+        };
+        script.onerror = (error) => {
+            console.error('Dice: Failed to load RPG Dice Roller', error);
+            reject(error);
+        };
+        document.head.appendChild(script);
+    });
+}
+
+// Get DiceRoll constructor from the loaded library
+function getDiceRoll() {
+    // Try common global names
+    if (window.rpgDiceRoller?.DiceRoll) return window.rpgDiceRoller.DiceRoll;
+    if (window.dice?.DiceRoll) return window.dice.DiceRoll;
+    if (window.DiceRoll) return window.DiceRoll;
+    
+    console.error('Dice: DiceRoll constructor not found');
+    return null;
+}
+
 /**
- * Roll the dice using SillyTavern's built-in dice roller.
+ * Roll the dice using RPG Dice Roller library.
  * @param {string} customDiceFormula Dice formula
  * @param {boolean} quiet Suppress chat output
  * @returns {Promise<string>} Roll result
@@ -52,25 +87,24 @@ async function doDiceRoll(customDiceFormula, quiet = false) {
         return '';
     }
 
-    const isValid = SillyTavern.libs.droll.validate(value);
+    const DiceRoll = getDiceRoll();
+    if (!DiceRoll) {
+        toastr.error('Dice roller not loaded');
+        return '[Dice roller not loaded]';
+    }
 
-    if (isValid) {
-        const result = SillyTavern.libs.droll.roll(value);
-        if (!result) {
-            return '[Roll failed]';
-        }
-        
-        // Format the result string consistently for both chat and macros
-        const resultString = `${result.total} (${result.rolls.join(', ')})`;
+    try {
+        const roll = new DiceRoll(value);
+        const resultString = `${roll.total} (${roll.output})`;
         
         if (!quiet) {
             const context = getContext();
             context.sendSystemMessage('generic', `${context.name1} rolls a ${value}. The result is: ${resultString}`, { isSmallSys: true });
         }
         
-        // Always return the formatted string for macro compatibility
         return resultString;
-    } else {
+    } catch (error) {
+        console.error('Dice: Roll failed', error);
         toastr.warning('Invalid dice formula');
         return '[Invalid dice formula]';
     }
@@ -182,28 +216,15 @@ function registerFunctionTools() {
 function registerMacros() {
     try {
         SillyTavern.getContext().registerMacro('rolls', async (args) => {
-            // Convert input to string and trim whitespace
             const input = String(args ?? '').trim();
             
             if (!input) {
                 return '[Error: Empty dice formula]';
             }
 
-            // Clean the input
-            let formula = input.replace(/['"]/g, '');
-
-            const isValid = SillyTavern.libs.droll.validate(formula);
-            if (!isValid) {
-                console.debug(`Invalid roll formula: ${formula}`);
-                return `[Error: Invalid formula "${formula}"]`;
-            }
-
-            const result = SillyTavern.libs.droll.roll(formula);
-            if (!result) {
-                return `[Error: Failed to roll ${formula}]`;
-            }
-
-            return `${result.total} (${result.rolls.join(', ')})`;
+            const formula = input.replace(/['"]/g, '');
+            const result = await doDiceRoll(formula, true);
+            return result;
         });
 
     } catch (error) {
@@ -213,6 +234,9 @@ function registerMacros() {
 
 jQuery(async function () {
     try {
+        // Load dice roller library first
+        await loadDiceRoller();
+        
         await addDiceRollButton();
         registerFunctionTools();
         registerMacros();
@@ -245,5 +269,6 @@ jQuery(async function () {
         }));
     } catch (error) {
         console.error('Failed to load DiceSoNice extension:', error);
+        toastr.error('Failed to load Dice extension. Check console for details.');
     }
 });

@@ -1,6 +1,7 @@
 # Aegis Framework - Development and AI Guidance (not for distribution)
 .context/
 .cursor/
+log/
 
 # Node modules (if any)
 node_modules/
@@ -32,3 +33,6 @@ yarn-error.log*
 .env.local
 .env.*.local
 
+
+
+SillyTavern-DiceSoNice.code-workspace

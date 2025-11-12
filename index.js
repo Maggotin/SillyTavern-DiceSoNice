@@ -13,18 +13,10 @@ const MODULE_NAME = 'dice';
 // Add script tags for dependencies
 function loadDependencies() {
     return new Promise((resolve, reject) => {
+        // Prefer local UMD bundle to avoid SRI/CDN issues
         const scripts = [
             {
-                src: 'https://unpkg.com/mathjs@11.8.2/lib/browser/math.js',
-                integrity: 'sha384-X31NN2duBz9kUTJtCMX7cR8kpKjlPyWQFKkKE1HUGzQKWXgvz+XxUZdSC0CGCWZH'
-            },
-            {
-                src: 'https://cdn.jsdelivr.net/npm/random-js@2.1.0/dist/random-js.umd.min.js',
-                integrity: 'sha384-/Bw1XO5tVn9+Z+YpuT+qO1FAyAOxMvUA1QCFnv+AcCJibx3MLvmvypVtLnSYTbJV'
-            },
-            {
-                src: 'https://cdn.jsdelivr.net/npm/@dice-roller/rpg-dice-roller@5.3.0/lib/umd/bundle.min.js',
-                integrity: 'sha384-Ry7+XjCnuVVnLKiQCQ/7ZXI4xsm9QLlXtYI4SXtjq3mLI95XFQpWzTcDCXVwMU9'
+                src: 'lib/rpg-dice-roller.umd.min.js',
             }
         ];
         
@@ -32,7 +24,9 @@ function loadDependencies() {
         scripts.forEach(scriptData => {
             const script = document.createElement('script');
             script.src = scriptData.src;
-            script.integrity = scriptData.integrity;
+            if (scriptData.integrity) {
+                script.integrity = scriptData.integrity;
+            }
             script.crossOrigin = 'anonymous';
             script.async = false;
             script.onload = () => {
@@ -266,11 +260,12 @@ function registerFunctionTools() {
                     type: 'string',
                     description: 'A dice formula to roll (e.g., 2d6, 4d6kh3, 2d20!, 1d20+5, d20)',
                 },
+                quiet: {
+                    type: 'boolean',
+                    description: 'Do not display the result in chat (default: false)',
+                },
             },
-            required: [
-                'who',
-                'formula',
-            ],
+            required: ['formula'],
         });
 
         registerFunctionTool({
@@ -279,9 +274,13 @@ function registerFunctionTools() {
             description: 'Rolls the dice using the provided formula and returns the numeric result. Supports various formats like 2d6 (basic), 4d6kh3 (keep highest 3), 2d20! (exploding), or 1d20+5 (with modifier). Use when it is necessary to roll the dice to determine the outcome of an action or when the user requests it.',
             parameters: rollDiceSchema,
             action: async (args) => {
-                if (!args?.formula) args = { formula: 'd20' };
-                const roll = await doDiceRoll(args.formula, true);
-                const result = args.who ? `${args.who} rolls a ${args.formula}. The result is: ${roll}` : `The result of a ${args.formula} roll is: ${roll}`;
+                const formula = String(args?.formula ?? 'd20');
+                const quiet = Boolean(args?.quiet ?? true);
+                const who = typeof args?.who === 'string' ? args.who.trim() : '';
+
+                const roll = await doDiceRoll(formula, quiet);
+                const prefix = who ? `${who} rolls a ${formula}.` : `Roll ${formula}.`;
+                const result = `${prefix} The result is: ${roll}`;
                 return result;
             },
             formatMessage: () => '',

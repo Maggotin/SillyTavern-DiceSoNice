@@ -13,6 +13,23 @@ const MODULE_NAME = 'dice';
 // Add script tags for dependencies
 function loadDependencies() {
     return new Promise((resolve, reject) => {
+        // Provide a minimal crypto.getRandomValues polyfill if unavailable to avoid RNG engine crashes
+        try {
+            const g = (typeof window !== 'undefined') ? window : self;
+            if (!g.crypto || typeof g.crypto.getRandomValues !== 'function') {
+                const polyfill = function (array) {
+                    for (let i = 0; i < array.length; i++) {
+                        array[i] = Math.floor(Math.random() * 256);
+                    }
+                    return array;
+                };
+                g.crypto = g.crypto || {};
+                g.crypto.getRandomValues = polyfill;
+            }
+        } catch (_) {
+            // ignore; library will still try to use Math.random if available
+        }
+
         // Use CDN UMD bundle without SRI to avoid integrity blocking
         const scripts = [
             {

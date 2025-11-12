@@ -1,5 +1,5 @@
 import { animation_duration } from '../../../../script.js';
-import { getContext } from '../../../extensions.js';
+import { getContext, renderExtensionTemplateAsync } from '../../../extensions.js';
 import { POPUP_TYPE, callGenericPopup } from '../../../popup.js';
 import { SlashCommand } from '../../../slash-commands/SlashCommand.js';
 import { ARGUMENT_TYPE, SlashCommandArgument, SlashCommandNamedArgument } from '../../../slash-commands/SlashCommandArgument.js';
@@ -9,185 +9,34 @@ import { isTrueBoolean } from '../../../utils.js';
 export { MODULE_NAME };
 
 const MODULE_NAME = 'dice';
+const TEMPLATE_PATH = 'third-party/SillyTavern-DiceSoNice';
 
-// Add script tags for dependencies
-function loadDependencies() {
-    return new Promise((resolve, reject) => {
-        // Provide a minimal crypto.getRandomValues polyfill if unavailable to avoid RNG engine crashes
-        try {
-            const g = (typeof window !== 'undefined') ? window : self;
-            if (!g.crypto || typeof g.crypto.getRandomValues !== 'function') {
-                const polyfill = function (array) {
-                    for (let i = 0; i < array.length; i++) {
-                        array[i] = Math.floor(Math.random() * 256);
-                    }
-                    return array;
-                };
-                g.crypto = g.crypto || {};
-                g.crypto.getRandomValues = polyfill;
-            }
-        } catch (_) {
-            // ignore; library will still try to use Math.random if available
-        }
+// Define default settings
+const defaultSettings = Object.freeze({
+    functionTool: false,
+});
 
-        // Try multiple safe sources in order (CDN dist build first; fallback to alt CDN; then local)
-        const scripts = [
-            { src: 'https://cdn.jsdelivr.net/npm/@dice-roller/rpg-dice-roller@5.1.0/dist/dice-roller.umd.min.js' },
-            { src: 'https://unpkg.com/@dice-roller/rpg-dice-roller@5.1.0/dist/dice-roller.umd.min.js' },
-            { src: 'lib/rpg-dice-roller.umd.min.js' },
-        ];
-        
-        function tryLoad(index) {
-            if (index >= scripts.length) {
-                reject(new Error('Failed to load rpg-dice-roller UMD from all sources'));
-                return;
-            }
-            const { src } = scripts[index];
-            const script = document.createElement('script');
-            script.src = src;
-            script.crossOrigin = 'anonymous';
-            script.async = false;
-            script.onload = () => resolve();
-            script.onerror = () => {
-                console.warn(`Dice: failed to load ${src}, trying next source...`);
-                tryLoad(index + 1);
-            };
-            document.head.appendChild(script);
-        }
+// Define a function to get or initialize settings
+function getSettings() {
+    const { extensionSettings } = SillyTavern.getContext();
 
-        tryLoad(0);
-    });
-}
-
-// Lazily resolve DiceRoll constructor from whatever global the UMD exposes
-function getDiceRollConstructor() {
-    const globalObj = (typeof window !== 'undefined') ? window : self;
-    // Common UMD globals seen in various builds
-    const candidates = [
-        () => globalObj.dice && globalObj.dice.DiceRoll,
-        () => globalObj.rpgDiceRoller && globalObj.rpgDiceRoller.DiceRoll,
-        () => globalObj.diceRoller && globalObj.diceRoller.DiceRoll,
-        () => globalObj.RPGDiceRoller && globalObj.RPGDiceRoller.DiceRoll,
-        () => globalObj.DiceRoll, // sometimes exported directly
-    ];
-    for (const pick of candidates) {
-        const ctor = pick();
-        if (typeof ctor === 'function') return ctor;
+    // Initialize settings if they don't exist
+    if (!extensionSettings[MODULE_NAME]) {
+        extensionSettings[MODULE_NAME] = structuredClone(defaultSettings);
     }
-    // Fallback: scan global keys for an object exposing a constructible DiceRoll
-    try {
-        for (const key of Object.getOwnPropertyNames(globalObj)) {
-            const val = globalObj[key];
-            if (val && typeof val === 'object' && typeof val.DiceRoll === 'function') {
-                try {
-                    // Validate it is constructible
-                    const test = new val.DiceRoll('1d4');
-                    if (typeof test.total === 'number') return val.DiceRoll;
-                } catch (_) {
-                    // not the right one
-                }
-            }
-            if (typeof val === 'function' && /DiceRoll/i.test(key)) {
-                try {
-                    const test = new val('1d4');
-                    if (typeof test.total === 'number') return val;
-                } catch (_) {}
-            }
-        }
-    } catch (_) {}
-    return null;
-}
 
-/**
- * Helper function to check if a string contains only digits
- * @param {string} str - The string to check
- * @returns {boolean} - Whether the string contains only digits
- */
-function isDigitsOnly(str) {
-    return /^\d+$/.test(str);
-}
-
-/**
- * Enhanced dice roller with support for advanced notation using RPG Dice Roller library
- */
-const droll = (() => {
-    /**
-     * Validates a dice notation string
-     * @param {string} formula - The dice notation to validate
-     * @returns {boolean} - Whether the notation is valid
-     */
-    function validate(formula) {
-        try {
-            const DiceRoll = getDiceRollConstructor();
-            if (!DiceRoll) {
-                console.error('Dice DiceRoll constructor not found on global UMD export');
-                return false;
-            }
-            // Reject overly complex formulas
-            if (formula.length > 100) {
-                console.warn(`Formula too long: "${formula}"`);
-                return false;
-            }
-            
-            // Handle digit-only case
-            if (isDigitsOnly(formula)) return true;
-            
-            // Handle '1+2' and other basic arithmetic expressions
-            if (/^\d+[+\-]\d+$/.test(formula)) return true;
-            
-            // Use RPG Dice Roller to validate
-            new DiceRoll(formula);
-            return true;
-        } catch (error) {
-            console.error(`Invalid formula: "${formula}"`, error);
-            return false;
+    // Ensure all default keys exist (helpful after updates)
+    for (const key of Object.keys(defaultSettings)) {
+        if (!Object.hasOwn(extensionSettings[MODULE_NAME], key)) {
+            extensionSettings[MODULE_NAME][key] = defaultSettings[key];
         }
     }
 
-    /**
-     * Rolls dice according to the provided formula
-     * @param {string} formula - The dice notation to roll
-     * @returns {Object|boolean} - The roll result or false if invalid
-     */
-    function roll(formula) {
-        // Handle single number case
-        if (isDigitsOnly(formula)) {
-            formula = `1d${formula}`;
-        }
-
-        const DiceRoll = getDiceRollConstructor();
-        if (!DiceRoll) {
-            console.error('Dice DiceRoll constructor not found on global UMD export');
-            return false;
-        }
-        
-        // Handle 'd20' case (no leading number)
-        if (formula.startsWith('d')) {
-            formula = '1' + formula;
-        }
-
-        try {
-            const diceRoll = new DiceRoll(formula);
-            // Use library-provided formatted output string for details
-            return {
-                total: diceRoll.total,
-                rolls: diceRoll.output, // includes notation breakdown
-                formula: formula
-            };
-        } catch (error) {
-            console.error(`Failed to roll formula: "${formula}"`, error);
-            return false;
-        }
-    }
-    
-    return {
-        validate,
-        roll
-    };
-})();
+    return extensionSettings[MODULE_NAME];
+}
 
 /**
- * Roll the dice.
+ * Roll the dice using SillyTavern's built-in dice roller.
  * @param {string} customDiceFormula Dice formula
  * @param {boolean} quiet Suppress chat output
  * @returns {Promise<string>} Roll result
@@ -203,20 +52,20 @@ async function doDiceRoll(customDiceFormula, quiet = false) {
         return '';
     }
 
-    const isValid = droll.validate(value);
+    const isValid = SillyTavern.libs.droll.validate(value);
 
     if (isValid) {
-        const result = droll.roll(value);
+        const result = SillyTavern.libs.droll.roll(value);
         if (!result) {
             return '[Roll failed]';
         }
         
         // Format the result string consistently for both chat and macros
-        const resultString = `${result.total} (${result.rolls})`;
+        const resultString = `${result.total} (${result.rolls.join(', ')})`;
         
         if (!quiet) {
             const context = getContext();
-            context.sendSystemMessage('generic', `${context.name1} rolls a ${value}. The result is: ${resultString}`);
+            context.sendSystemMessage('generic', `${context.name1} rolls a ${value}. The result is: ${resultString}`, { isSmallSys: true });
         }
         
         // Always return the formatted string for macro compatibility
@@ -227,29 +76,23 @@ async function doDiceRoll(customDiceFormula, quiet = false) {
     }
 }
 
-function addDiceRollButton() {
-    const buttonHtml = `
-    <div id="roll_dice" class="list-group-item flex-container flexGap5">
-        <div class="fa-solid fa-dice extensionsMenuExtensionButton" title="Roll Dice" /></div>
-        Roll Dice
-    </div>
-        `;
-    const dropdownHtml = `
-    <div id="dice_dropdown">
-        <ul class="list-group">
-            <li class="list-group-item" data-value="d4">d4</li>
-            <li class="list-group-item" data-value="d6">d6</li>
-            <li class="list-group-item" data-value="d8">d8</li>
-            <li class="list-group-item" data-value="d10">d10</li>
-            <li class="list-group-item" data-value="d12">d12</li>
-            <li class="list-group-item" data-value="d20">d20</li>
-            <li class="list-group-item" data-value="d100">d100</li>
-            <li class="list-group-item" data-value="custom">...</li>
-        </ul>
-    </div>`;
+async function addDiceRollButton() {
+    const buttonHtml = await renderExtensionTemplateAsync(TEMPLATE_PATH, 'button');
+    const dropdownHtml = await renderExtensionTemplateAsync(TEMPLATE_PATH, 'dropdown');
+    const settingsHtml = await renderExtensionTemplateAsync(TEMPLATE_PATH, 'settings');
 
     const getWandContainer = () => $(document.getElementById('dice_wand_container') ?? document.getElementById('extensionsMenu'));
     getWandContainer().append(buttonHtml);
+
+    const getSettingsContainer = () => $(document.getElementById('dice_container') ?? document.getElementById('extensions_settings2'));
+    getSettingsContainer().append(settingsHtml);
+
+    const settings = getSettings();
+    $('#dice_function_tool').prop('checked', settings.functionTool).on('change', function () {
+        settings.functionTool = !!$(this).prop('checked');
+        SillyTavern.getContext().saveSettingsDebounced();
+        registerFunctionTools();
+    });
 
     $(document.body).append(dropdownHtml);
     $('#dice_dropdown li').on('click', function () {
@@ -260,7 +103,7 @@ function addDiceRollButton() {
     const dropdown = $('#dice_dropdown');
     dropdown.hide();
 
-    let popper = Popper.createPopper(button.get(0), dropdown.get(0), {
+    const popper = SillyTavern.libs.Popper.createPopper(button.get(0), dropdown.get(0), {
         placement: 'top',
     });
 
@@ -280,9 +123,17 @@ function addDiceRollButton() {
 
 function registerFunctionTools() {
     try {
-        const { registerFunctionTool } = getContext();
-        if (!registerFunctionTool) {
+        const { registerFunctionTool, unregisterFunctionTool } = SillyTavern.getContext();
+        if (!registerFunctionTool || !unregisterFunctionTool) {
             console.debug('Dice: function tools are not supported');
+            return;
+        }
+
+        unregisterFunctionTool('RollTheDice');
+
+        // Function tool is disabled by the settings
+        const settings = getSettings();
+        if (!settings.functionTool) {
             return;
         }
 
@@ -292,7 +143,7 @@ function registerFunctionTools() {
             properties: {
                 who: {
                     type: 'string',
-                    description: 'The name of the persona rolling the dice',
+                    description: 'The name of the persona rolling the dice (optional)',
                 },
                 formula: {
                     type: 'string',
@@ -341,28 +192,18 @@ function registerMacros() {
             // Clean the input
             let formula = input.replace(/['"]/g, '');
 
-            // Handle digit-only case (e.g., "20" -> "1d20")
-            if (isDigitsOnly(formula)) {
-                formula = `1d${formula}`;
-            }
-
-            // Handle 'd' prefix case (e.g., "d20" -> "1d20")
-            if (formula.startsWith('d') && isDigitsOnly(formula.substring(1))) {
-                formula = `1${formula}`;
-            }
-
-            const isValid = droll.validate(formula);
+            const isValid = SillyTavern.libs.droll.validate(formula);
             if (!isValid) {
                 console.debug(`Invalid roll formula: ${formula}`);
                 return `[Error: Invalid formula "${formula}"]`;
             }
 
-            const result = droll.roll(formula);
+            const result = SillyTavern.libs.droll.roll(formula);
             if (!result) {
                 return `[Error: Failed to roll ${formula}]`;
             }
 
-            return `${result.total} (${result.rolls})`;
+            return `${result.total} (${result.rolls.join(', ')})`;
         });
 
     } catch (error) {
@@ -372,8 +213,7 @@ function registerMacros() {
 
 jQuery(async function () {
     try {
-        await loadDependencies();
-        addDiceRollButton();
+        await addDiceRollButton();
         registerFunctionTools();
         registerMacros();
         SlashCommandParser.addCommandObject(SlashCommand.fromProps({

@@ -35,17 +35,39 @@ function getSettings() {
     return extensionSettings[MODULE_NAME];
 }
 
-// Load RPG Dice Roller library
+// Load a script and return a promise
+function loadScript(src) {
+    return new Promise((resolve, reject) => {
+        const script = document.createElement('script');
+        script.src = src;
+        script.async = false;
+        script.onload = () => {
+            console.log('Dice: Loaded', src);
+            resolve(true);
+        };
+        script.onerror = (error) => {
+            console.error('Dice: Failed to load', src, error);
+            reject(error);
+        };
+        document.head.appendChild(script);
+    });
+}
+
+// Load RPG Dice Roller library with all dependencies
 async function loadDiceRoller() {
     // Check if already loaded
     if (window.rpgDiceRoller || window.dice) {
         return true;
     }
 
-    // Provide crypto.getRandomValues polyfill if needed
-    if (!window.crypto || typeof window.crypto.getRandomValues !== 'function') {
-        console.warn('Dice: crypto.getRandomValues not available, using Math.random fallback');
-        if (!window.crypto) window.crypto = {};
+    // CRITICAL: Set up crypto BEFORE loading random-js
+    // random-js needs crypto.getRandomValues()
+    if (typeof window.crypto === 'undefined') {
+        window.crypto = {};
+    }
+    
+    if (typeof window.crypto.getRandomValues !== 'function') {
+        console.warn('Dice: Providing crypto.getRandomValues polyfill using Math.random');
         window.crypto.getRandomValues = function(array) {
             for (let i = 0; i < array.length; i++) {
                 array[i] = Math.floor(Math.random() * 256);
@@ -54,33 +76,39 @@ async function loadDiceRoller() {
         };
     }
 
-    return new Promise((resolve, reject) => {
-        const script = document.createElement('script');
-        // Get the current script's URL to determine the extension base path
-        const scripts = document.querySelectorAll('script[src*="SillyTavern-DiceSoNice"]');
-        let basePath = 'scripts/extensions/third-party/SillyTavern-DiceSoNice/';
-        
-        // Try to determine the actual base path from loaded scripts
-        if (scripts.length > 0) {
-            const scriptSrc = scripts[0].src;
-            const match = scriptSrc.match(/(.*\/SillyTavern-DiceSoNice\/)/);
-            if (match) {
-                basePath = match[1];
-            }
+    // Get the extension base path
+    const scripts = document.querySelectorAll('script[src*="SillyTavern-DiceSoNice"]');
+    let basePath = 'scripts/extensions/third-party/SillyTavern-DiceSoNice/';
+    
+    if (scripts.length > 0) {
+        const scriptSrc = scripts[0].src;
+        const match = scriptSrc.match(/(.*\/SillyTavern-DiceSoNice\/)/);
+        if (match) {
+            basePath = match[1];
         }
+    }
+
+    try {
+        // Load dependencies in order: mathjs -> random-js -> dice-roller
+        await loadScript(basePath + 'lib/math.js');
+        await loadScript(basePath + 'lib/random-js.umd.min.js');
+        await loadScript(basePath + 'lib/rpg-dice-roller.umd.min.js');
         
-        script.src = basePath + 'lib/rpg-dice-roller.umd.min.js';
-        script.async = false;
-        script.onload = () => {
-            console.log('Dice: RPG Dice Roller loaded successfully from', script.src);
-            resolve(true);
-        };
-        script.onerror = (error) => {
-            console.error('Dice: Failed to load RPG Dice Roller from', script.src, error);
-            reject(error);
-        };
-        document.head.appendChild(script);
-    });
+        // Check if the library is available
+        if (window.rpgDiceRoller || window.dice || window.DiceRoll) {
+            console.log('Dice: RPG Dice Roller loaded successfully');
+            console.log('Dice: Library available as', 
+                window.rpgDiceRoller ? 'window.rpgDiceRoller' : 
+                window.dice ? 'window.dice' : 
+                'window.DiceRoll');
+            return true;
+        } else {
+            throw new Error('Library loaded but not accessible');
+        }
+    } catch (error) {
+        console.error('Dice: Failed to load dice roller or dependencies', error);
+        throw error;
+    }
 }
 
 // Get DiceRoll constructor from the loaded library

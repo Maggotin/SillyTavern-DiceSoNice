@@ -46,6 +46,7 @@ function getDiceRollConstructor() {
     const globalObj = (typeof window !== 'undefined') ? window : self;
     // Common UMD globals seen in various builds
     const candidates = [
+        () => globalObj.dice && globalObj.dice.DiceRoll,
         () => globalObj.rpgDiceRoller && globalObj.rpgDiceRoller.DiceRoll,
         () => globalObj.diceRoller && globalObj.diceRoller.DiceRoll,
         () => globalObj.RPGDiceRoller && globalObj.RPGDiceRoller.DiceRoll,
@@ -149,40 +150,10 @@ const droll = (() => {
 
         try {
             const diceRoll = new DiceRoll(formula);
-            const rollDetails = [];
-            
-            // Process all dice groups
-            diceRoll.rolls.forEach(rollGroup => {
-                if (Array.isArray(rollGroup)) {
-                    // Handle dice rolls
-                    const groupDetails = rollGroup.map(result => {
-                        if (typeof result === 'object') {
-                            let text = result.value.toString();
-                            // Add modifiers in order
-                            if (result.exploded) text += '!';
-                            if (result.dropped) text += 'd';
-                            if (result.rerolled) text += 'r';
-                            if (result.calculationValue !== result.value) {
-                                text += `[${result.calculationValue}]`;
-                            }
-                            return text;
-                        }
-                        return result.toString();
-                    });
-                    rollDetails.push(groupDetails.join(', '));
-                } else if (typeof rollGroup === 'object' && rollGroup.operator) {
-                    // Handle operators between groups
-                    rollDetails.push(rollGroup.operator);
-                } else {
-                    // Handle modifiers and static numbers
-                    rollDetails.push(String(rollGroup));
-                }
-            });
-            
-            // Format to match the expected output format
+            // Use library-provided formatted output string for details
             return {
                 total: diceRoll.total,
-                rolls: rollDetails.join(' '),
+                rolls: diceRoll.output, // includes notation breakdown
                 formula: formula
             };
         } catch (error) {

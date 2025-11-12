@@ -267,17 +267,21 @@ function registerFunctionTools() {
 
 function registerMacros() {
     try {
-        SillyTavern.getContext().registerMacro('rolls', (args) => {
+        const { registerMacro, unregisterMacro } = SillyTavern.getContext();
+        if (typeof registerMacro !== 'function') {
+            console.debug('Dice: macros are not supported');
+            return;
+        }
+
+        const macroHandler = (args) => {
             const input = String(args ?? '').trim();
-            
-            console.log('Dice: Macro called with args:', args, 'formula:', input);
-            
+            console.debug('Dice: macro invoked with', input);
+
             if (!input) {
                 return '[Error: Empty dice formula]';
             }
 
             const formula = input.replace(/['"]/g, '');
-            
             const DiceRoll = getDiceRoll();
             if (!DiceRoll) {
                 console.error('Dice: DiceRoll constructor not found');
@@ -286,16 +290,20 @@ function registerMacros() {
 
             try {
                 const roll = new DiceRoll(formula);
-                const result = String(roll.total);
-                console.log('Dice: Macro result for', formula, '=', result);
-                // Return just the total for macro use
-                return result;
+                return String(roll.total);
             } catch (error) {
                 console.error('Dice: Macro roll failed for formula:', formula, error);
                 return '[Invalid dice formula]';
             }
-        });
+        };
 
+        if (typeof unregisterMacro === 'function') {
+            unregisterMacro('roll');
+            unregisterMacro('rolls');
+        }
+
+        registerMacro('roll', macroHandler);
+        registerMacro('rolls', macroHandler);
     } catch (error) {
         console.error('Dice: Error registering macros', error);
     }

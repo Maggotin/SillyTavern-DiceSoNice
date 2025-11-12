@@ -30,10 +30,25 @@ function loadDependencies() {
             // ignore; library will still try to use Math.random if available
         }
 
-        // Use CDN UMD bundle without SRI to avoid integrity blocking
+        // Resolve the extension base URL from current script and load the local UMD bundle
+        let baseUrl = '';
+        try {
+            const candidates = [
+                document.currentScript,
+                ...Array.from(document.getElementsByTagName('script')),
+            ].filter(Boolean);
+            const me = candidates.find(s => (s.src || '').includes('index.js')) || candidates[0];
+            if (me && me.src) {
+                const url = new URL(me.src, window.location.href);
+                // drop everything after last '/'
+                baseUrl = url.href.substring(0, url.href.lastIndexOf('/') + 1);
+            }
+        } catch (_) {}
+        const diceUrl = baseUrl ? `${baseUrl}lib/rpg-dice-roller.umd.min.js` : 'lib/rpg-dice-roller.umd.min.js';
+
         const scripts = [
             {
-                src: 'https://cdn.jsdelivr.net/npm/@dice-roller/rpg-dice-roller@5.3.0/lib/umd/bundle.min.js',
+                src: diceUrl,
             }
         ];
         

@@ -267,7 +267,8 @@ function registerFunctionTools() {
 
 function registerMacros() {
     try {
-        SillyTavern.getContext().registerMacro('rolls', (args) => {
+        // Register the macro with the argument format SillyTavern expects
+        SillyTavern.getContext().registerMacro('rolls::{formula}', (args) => {
             const input = String(args ?? '').trim();
             
             console.log('Dice: Macro called with args:', args, 'formula:', input);

@@ -267,16 +267,17 @@ function registerFunctionTools() {
 
 function registerMacros() {
     try {
-        const { registerMacro, unregisterMacro } = SillyTavern.getContext();
-        if (typeof registerMacro !== 'function') {
+        const { registerMacro, registerRegexMacro, unregisterMacro } = SillyTavern.getContext();
+        const macroAvailable =
+            typeof registerRegexMacro === 'function' || typeof registerMacro === 'function';
+
+        if (!macroAvailable) {
             console.debug('Dice: macros are not supported');
             return;
         }
 
-        const macroHandler = (args) => {
-            const input = String(args ?? '').trim();
-            console.debug('Dice: macro invoked with', input);
-
+        const resolveFormula = (rawFormula) => {
+            const input = String(rawFormula ?? '').trim();
             if (!input) {
                 return '[Error: Empty dice formula]';
             }
@@ -297,13 +298,28 @@ function registerMacros() {
             }
         };
 
-        if (typeof unregisterMacro === 'function') {
-            unregisterMacro('roll');
-            unregisterMacro('rolls');
-        }
+        const safeUnregister = (name) => {
+            if (typeof unregisterMacro === 'function') {
+                try {
+                    unregisterMacro(name);
+                } catch (err) {
+                    console.debug(`Dice: macro ${name} was not registered`, err);
+                }
+            }
+        };
 
-        registerMacro('roll', macroHandler);
-        registerMacro('rolls', macroHandler);
+        safeUnregister('roll');
+        safeUnregister('rolls');
+
+        if (typeof registerRegexMacro === 'function') {
+            const regexHandler = (_, captured) => resolveFormula(captured);
+            registerRegexMacro('roll', /{{\s*roll\s*[: ]\s*([^}]+)}}/gi, regexHandler);
+            registerRegexMacro('rolls', /{{\s*rolls\s*[: ]\s*([^}]+)}}/gi, regexHandler);
+        } else {
+            const macroHandler = (args) => resolveFormula(args);
+            registerMacro('roll', macroHandler);
+            registerMacro('rolls', macroHandler);
+        }
     } catch (error) {
         console.error('Dice: Error registering macros', error);
     }

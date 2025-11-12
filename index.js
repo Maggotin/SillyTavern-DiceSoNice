@@ -267,15 +267,18 @@ function registerFunctionTools() {
 
 function registerMacros() {
     try {
-        const context = SillyTavern.getContext();
+        const { registerMacro, unregisterMacro } = SillyTavern.getContext();
 
-        // Unregister the old simple macro and any of our previous attempts
-        try { context.unregisterMacro('roll::{formula}'); } catch (e) { /* silent fail */ }
-        try { context.unregisterMacro('rolls::{formula}'); } catch (e) { /* silent fail */ }
-        try { context.unregisterMacro('rolls'); } catch (e) { /* silent fail */ }
+        // Unregister the built-in simple roller (silent fail if not exists)
+        try {
+            unregisterMacro('roll');
+            console.log('Dice: Unregistered built-in "roll" macro');
+        } catch (e) {
+            console.log('Dice: Built-in "roll" macro not found (this is fine)');
+        }
 
         // Register our advanced roller under the standard 'roll' name
-        context.registerMacro('roll::{formula}', (args) => {
+        registerMacro('roll', (args) => {
             const input = String(args ?? '').trim();
             
             console.log('Dice (Advanced): Macro called with formula:', input);
@@ -303,7 +306,7 @@ function registerMacros() {
             }
         });
 
-        console.log('Dice: Advanced "roll::{formula}" macro registered successfully.');
+        console.log('Dice: Advanced "roll" macro registered successfully (replaces built-in)');
 
     } catch (error) {
         console.error('Dice: Error registering macros', error);

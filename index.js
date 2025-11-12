@@ -320,7 +320,11 @@ jQuery(async function () {
         
         await addDiceRollButton();
         registerFunctionTools();
-        registerMacros();
+        
+        // Delay macro registration to ensure we override built-in macros
+        setTimeout(() => {
+            registerMacros();
+        }, 100);
         SlashCommandParser.addCommandObject(SlashCommand.fromProps({
             name: 'roll',
             aliases: ['r', 'rolls'],

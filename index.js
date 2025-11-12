@@ -267,11 +267,18 @@ function registerFunctionTools() {
 
 function registerMacros() {
     try {
-        // Register the macro with the argument format SillyTavern expects
-        SillyTavern.getContext().registerMacro('rolls::{formula}', (args) => {
+        const context = SillyTavern.getContext();
+
+        // Unregister the old simple macro and any of our previous attempts
+        try { context.unregisterMacro('roll::{formula}'); } catch (e) { /* silent fail */ }
+        try { context.unregisterMacro('rolls::{formula}'); } catch (e) { /* silent fail */ }
+        try { context.unregisterMacro('rolls'); } catch (e) { /* silent fail */ }
+
+        // Register our advanced roller under the standard 'roll' name
+        context.registerMacro('roll::{formula}', (args) => {
             const input = String(args ?? '').trim();
             
-            console.log('Dice: Macro called with args:', args, 'formula:', input);
+            console.log('Dice (Advanced): Macro called with formula:', input);
             
             if (!input) {
                 return '[Error: Empty dice formula]';
@@ -281,21 +288,22 @@ function registerMacros() {
             
             const DiceRoll = getDiceRoll();
             if (!DiceRoll) {
-                console.error('Dice: DiceRoll constructor not found');
+                console.error('Dice (Advanced): DiceRoll constructor not found');
                 return '[Dice roller not loaded]';
             }
 
             try {
                 const roll = new DiceRoll(formula);
                 const result = String(roll.total);
-                console.log('Dice: Macro result for', formula, '=', result);
-                // Return just the total for macro use
+                console.log('Dice (Advanced): Macro result for', formula, '=', result);
                 return result;
             } catch (error) {
-                console.error('Dice: Macro roll failed for formula:', formula, error);
+                console.error('Dice (Advanced): Macro roll failed for formula:', formula, error);
                 return '[Invalid dice formula]';
             }
         });
+
+        console.log('Dice: Advanced "roll::{formula}" macro registered successfully.');
 
     } catch (error) {
         console.error('Dice: Error registering macros', error);

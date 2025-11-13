@@ -181,13 +181,105 @@ async function addDiceRollButton() {
     });
 
     $(document.body).append(dropdownHtml);
-    $('#dice_dropdown li').on('click', function () {
-        dropdown.fadeOut(animation_duration);
-        doDiceRoll($(this).data('value'), false);
-    });
+    
     const button = $('#roll_dice');
     const dropdown = $('#dice_dropdown');
     dropdown.hide();
+
+    // Initialize dice builder state
+    let diceFormula = [];
+    
+    const formulaDisplay = $('#dice_formula');
+    const rollButton = $('#dice_roll_built');
+    const clearButton = $('#dice_clear');
+    const descriptionInput = $('#dice_description');
+
+    function updateFormulaDisplay() {
+        if (diceFormula.length === 0) {
+            formulaDisplay.text('Ready to build...').addClass('empty');
+            rollButton.prop('disabled', true);
+        } else {
+            formulaDisplay.text(diceFormula.join(' ')).removeClass('empty');
+            rollButton.prop('disabled', false);
+        }
+    }
+
+    function addToFormula(value) {
+        // Smart formatting: add '+' between dice/modifiers if needed
+        if (diceFormula.length > 0) {
+            const lastItem = diceFormula[diceFormula.length - 1];
+            const needsOperator = !lastItem.match(/[+\-]$/) && !value.match(/^[+\-!khdl]/);
+            if (needsOperator && !value.match(/^[+\-!khdl]/)) {
+                diceFormula.push('+');
+            }
+        }
+        diceFormula.push(value);
+        updateFormulaDisplay();
+    }
+
+    // Dice type buttons
+    $('.dice-type-btn').on('click', function (e) {
+        e.stopPropagation();
+        const die = $(this).data('die');
+        addToFormula(die);
+    });
+
+    // Modifier buttons
+    $('.dice-modifier-btn').on('click', function (e) {
+        e.stopPropagation();
+        const modifier = $(this).data('modifier');
+        addToFormula(modifier);
+    });
+
+    // Preset buttons
+    $('.dice-preset-btn').on('click', function (e) {
+        e.stopPropagation();
+        const formula = $(this).data('formula');
+        const description = $(this).data('description');
+        
+        diceFormula = [formula];
+        updateFormulaDisplay();
+        
+        // Auto-fill description if preset has one and field is empty
+        if (description && !descriptionInput.val().trim()) {
+            descriptionInput.val(description);
+        }
+    });
+
+    // Clear button
+    clearButton.on('click', function (e) {
+        e.stopPropagation();
+        diceFormula = [];
+        descriptionInput.val('');
+        updateFormulaDisplay();
+    });
+
+    // Roll built formula
+    rollButton.on('click', function (e) {
+        e.stopPropagation();
+        if (diceFormula.length > 0) {
+            let formula = diceFormula.join('').replace(/\s+/g, '');
+            
+            // Add description if provided (using RPG Dice Roller notation: {description}formula)
+            const description = descriptionInput.val().trim();
+            if (description) {
+                formula = `{${description}}${formula}`;
+            }
+            
+            dropdown.fadeOut(animation_duration);
+            doDiceRoll(formula, false);
+            diceFormula = [];
+            descriptionInput.val('');
+            updateFormulaDisplay();
+        }
+    });
+
+    // Custom input button
+    $('#dice_custom_input').on('click', async function (e) {
+        e.stopPropagation();
+        dropdown.fadeOut(animation_duration);
+        await doDiceRoll('custom', false);
+    });
 
     const popper = SillyTavern.libs.Popper.createPopper(button.get(0), dropdown.get(0), {
         placement: 'top',

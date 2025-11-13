@@ -1,24 +1,98 @@
 <div id="dice_dropdown">
-    <ul class="list-group">
-        <!-- Basic rolls -->
-        <li class="list-group-item" data-value="d4">d4</li>
-        <li class="list-group-item" data-value="d6">d6</li>
-        <li class="list-group-item" data-value="d8">d8</li>
-        <li class="list-group-item" data-value="d10">d10</li>
-        <li class="list-group-item" data-value="d12">d12</li>
-        <li class="list-group-item" data-value="d20">d20</li>
-        <li class="list-group-item" data-value="d100">d100</li>
+    <div class="dice-builder-container">
+        <!-- Roll Description -->
+        <div class="dice-builder-section">
+            <div class="dice-builder-label">Roll Description (Optional)</div>
+            <input type="text" id="dice_description" class="text_pole" placeholder="e.g., Initiative, Fireball damage..." />
+        </div>
 
-        <!-- Common advanced rolls using RPG Dice Roller syntax -->
-        <li class="list-group-item" data-value="2d20kh1">d20 (advantage, 2d20kh1)</li>
-        <li class="list-group-item" data-value="2d20kl1">d20 (disadvantage, 2d20kl1)</li>
-        <li class="list-group-item" data-value="4d6kh3">4d6 (keep highest 3, 4d6kh3)</li>
-        <li class="list-group-item" data-value="3d6+2">3d6+2</li>
-        <li class="list-group-item" data-value="2d6+1d4">2d6+1d4</li>
-        <li class="list-group-item" data-value="2d6+3">2d6+3</li>
+        <!-- Formula Display -->
+        <div class="dice-formula-display">
+            <div id="dice_formula" class="dice-formula-text">Ready to build...</div>
+            <button id="dice_clear" class="menu_button dice-clear-btn" title="Clear formula">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+        </div>
 
-        <!-- Custom formula -->
-        <li class="list-group-item" data-value="custom">Custom formula…</li>
-    </ul>
+        <!-- Dice Type Buttons -->
+        <div class="dice-builder-section">
+            <div class="dice-builder-label">Dice Types</div>
+            <div class="dice-type-buttons">
+                <button class="menu_button dice-type-btn" data-die="d4">d4</button>
+                <button class="menu_button dice-type-btn" data-die="d6">d6</button>
+                <button class="menu_button dice-type-btn" data-die="d8">d8</button>
+                <button class="menu_button dice-type-btn" data-die="d10">d10</button>
+                <button class="menu_button dice-type-btn" data-die="d12">d12</button>
+                <button class="menu_button dice-type-btn" data-die="d20">d20</button>
+                <button class="menu_button dice-type-btn" data-die="d100">d100</button>
+                <button class="menu_button dice-type-btn" data-die="dF" title="Fudge/Fate dice">dF</button>
+            </div>
+        </div>
+
+        <!-- Quick Modifiers -->
+        <div class="dice-builder-section">
+            <div class="dice-builder-label">Modifiers</div>
+            <div class="dice-modifier-buttons">
+                <button class="menu_button dice-modifier-btn" data-modifier="+1">+1</button>
+                <button class="menu_button dice-modifier-btn" data-modifier="+2">+2</button>
+                <button class="menu_button dice-modifier-btn" data-modifier="+3">+3</button>
+                <button class="menu_button dice-modifier-btn" data-modifier="+5">+5</button>
+                <button class="menu_button dice-modifier-btn" data-modifier="-1">-1</button>
+                <button class="menu_button dice-modifier-btn" data-modifier="-2">-2</button>
+                <button class="menu_button dice-modifier-btn" data-modifier="!" title="Exploding dice">!</button>
+                <button class="menu_button dice-modifier-btn" data-modifier="kh1" title="Keep highest 1">kh</button>
+                <button class="menu_button dice-modifier-btn" data-modifier="kl1" title="Keep lowest 1">kl</button>
+            </div>
+        </div>
+
+        <!-- D&D Common Rolls -->
+        <div class="dice-builder-section">
+            <div class="dice-builder-label">D&D Common Rolls</div>
+            <div class="dice-preset-buttons">
+                <button class="menu_button dice-preset-btn" data-formula="2d20kh1" data-description="Advantage" title="Roll with advantage">Advantage</button>
+                <button class="menu_button dice-preset-btn" data-formula="2d20kl1" data-description="Disadvantage" title="Roll with disadvantage">Disadvantage</button>
+                <button class="menu_button dice-preset-btn" data-formula="d20" data-description="Ability Check" title="Standard ability check">Ability Check</button>
+                <button class="menu_button dice-preset-btn" data-formula="d20" data-description="Saving Throw" title="Saving throw">Save</button>
+                <button class="menu_button dice-preset-btn" data-formula="d20" data-description="Initiative" title="Initiative roll">Initiative</button>
+            </div>
+        </div>
+
+        <!-- Character Creation & Damage -->
+        <div class="dice-builder-section">
+            <div class="dice-builder-label">Stats & Damage</div>
+            <div class="dice-preset-buttons">
+                <button class="menu_button dice-preset-btn" data-formula="4d6kh3" data-description="Ability Score" title="Roll 4d6, keep highest 3">Stat Roll</button>
+                <button class="menu_button dice-preset-btn" data-formula="d4" data-description="Damage" title="1d4 damage">1d4</button>
+                <button class="menu_button dice-preset-btn" data-formula="d6" data-description="Damage" title="1d6 damage">1d6</button>
+                <button class="menu_button dice-preset-btn" data-formula="d8" data-description="Damage" title="1d8 damage">1d8</button>
+                <button class="menu_button dice-preset-btn" data-formula="2d6" data-description="Damage" title="2d6 damage">2d6</button>
+                <button class="menu_button dice-preset-btn" data-formula="d10" data-description="Damage" title="1d10 damage">1d10</button>
+                <button class="menu_button dice-preset-btn" data-formula="d12" data-description="Damage" title="1d12 damage">1d12</button>
+            </div>
+        </div>
+
+        <!-- Special Mechanics -->
+        <div class="dice-builder-section">
+            <div class="dice-builder-label">Special Mechanics</div>
+            <div class="dice-preset-buttons">
+                <button class="menu_button dice-preset-btn" data-formula="d20!" data-description="Crit Confirm" title="Exploding d20 for critical confirmation">Crit!</button>
+                <button class="menu_button dice-preset-btn" data-formula="8d6" data-description="Fireball" title="8d6 fireball damage">Fireball</button>
+                <button class="menu_button dice-preset-btn" data-formula="d100" data-description="Percentile" title="d100 roll">d%</button>
+                <button class="menu_button dice-preset-btn" data-formula="3d6" data-description="Ability Score (3d6)" title="Roll 3d6 for ability">3d6 Stat</button>
+            </div>
+        </div>
+
+        <!-- Action Buttons -->
+        <div class="dice-builder-actions">
+            <button id="dice_roll_built" class="menu_button menu_button_icon" disabled>
+                <i class="fa-solid fa-dice"></i>
+                <span>Roll</span>
+            </button>
+            <button id="dice_custom_input" class="menu_button menu_button_icon">
+                <i class="fa-solid fa-keyboard"></i>
+                <span>Custom</span>
+            </button>
+        </div>
+    </div>
 </div>
 

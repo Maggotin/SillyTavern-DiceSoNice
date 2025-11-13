@@ -1,4 +1,102 @@
 #dice_dropdown {
     z-index: 30000;
     backdrop-filter: blur(var(--SmartThemeBlurStrength));
+    padding: 10px;
+    max-width: 420px;
+    max-height: 80vh;
+    overflow-y: auto;
+}
+
+.dice-builder-container {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+#dice_description {
+    width: 100%;
+    padding: 8px;
+    font-size: 13px;
+    border-radius: 4px;
+}
+
+.dice-formula-display {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px;
+    background: rgba(0, 0, 0, 0.3);
+    border-radius: 4px;
+    min-height: 40px;
+}
+
+.dice-formula-text {
+    flex: 1;
+    font-family: monospace;
+    font-size: 14px;
+    color: var(--SmartThemeBodyColor);
+    word-break: break-all;
+}
+
+.dice-formula-text.empty {
+    opacity: 0.5;
+    font-style: italic;
+}
+
+.dice-clear-btn {
+    padding: 4px 8px !important;
+    min-width: unset !important;
+}
+
+.dice-builder-section {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.dice-builder-label {
+    font-size: 11px;
+    text-transform: uppercase;
+    opacity: 0.7;
+    font-weight: bold;
+    letter-spacing: 0.5px;
+}
+
+.dice-type-buttons,
+.dice-modifier-buttons,
+.dice-preset-buttons {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+}
+
+.dice-type-btn,
+.dice-modifier-btn,
+.dice-preset-btn {
+    padding: 6px 12px !important;
+    min-width: unset !important;
+    font-size: 13px;
+}
+
+.dice-type-btn:hover,
+.dice-modifier-btn:hover,
+.dice-preset-btn:hover {
+    transform: scale(1.05);
+    transition: transform 0.1s;
+}
+
+.dice-builder-actions {
+    display: flex;
+    gap: 8px;
+    padding-top: 8px;
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.dice-builder-actions button {
+    flex: 1;
+}
+
+#dice_roll_built:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
 }

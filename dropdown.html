@@ -8,7 +8,7 @@
 
         <!-- Formula Display -->
         <div class="dice-formula-display">
-            <div id="dice_formula" class="dice-formula-text">Ready to build...</div>
+            <input type="text" id="dice_formula" class="dice-formula-text" placeholder="Ready to build..." />
             <button id="dice_clear" class="menu_button dice-clear-btn" title="Clear formula">
                 <i class="fa-solid fa-xmark"></i>
             </button>
@@ -51,9 +51,11 @@
             <div class="dice-preset-buttons">
                 <button class="menu_button dice-preset-btn" data-formula="2d20kh1" data-description="Advantage" title="Roll with advantage">Advantage</button>
                 <button class="menu_button dice-preset-btn" data-formula="2d20kl1" data-description="Disadvantage" title="Roll with disadvantage">Disadvantage</button>
-                <button class="menu_button dice-preset-btn" data-formula="d20" data-description="Ability Check" title="Standard ability check">Ability Check</button>
+                <button class="menu_button dice-preset-btn" data-requires-selection="ability" title="Choose ability">Ability Check</button>
+                <button class="menu_button dice-preset-btn" data-requires-selection="skill" title="Choose skill">Skill Check</button>
                 <button class="menu_button dice-preset-btn" data-formula="d20" data-description="Saving Throw" title="Saving throw">Save</button>
                 <button class="menu_button dice-preset-btn" data-formula="d20" data-description="Initiative" title="Initiative roll">Initiative</button>
+                <button class="menu_button dice-preset-btn" data-formula="d20" data-description="Death Saving Throw" title="Death save">Death Save</button>
             </div>
         </div>
 
@@ -77,6 +79,8 @@
             <div class="dice-preset-buttons">
                 <button class="menu_button dice-preset-btn" data-formula="d20!" data-description="Exploding d20" title="Exploding d20">Exploding d20</button>
                 <button class="menu_button dice-preset-btn" data-formula="d100" data-description="Percentile" title="d100 roll">Percentile</button>
+                <button class="menu_button dice-preset-btn" data-formula="d100" data-description="Wild Magic Surge" title="Wild magic surge">Wild Magic</button>
+                <button class="menu_button dice-preset-btn" data-requires-selection="hitdice" title="Choose hit die">Hit Dice</button>
                 <button class="menu_button dice-preset-btn" data-formula="3d6" data-description="Ability Score" title="Roll 3d6 for ability">3d6 Stat</button>
             </div>
         </div>

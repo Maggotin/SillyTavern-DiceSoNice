@@ -197,19 +197,46 @@ async function addDiceRollButton() {
     const descriptionInput = $('#dice_description');
 
     function updateFormulaDisplay() {
+        const formulaText = diceFormula.join(' ');
         if (diceFormula.length === 0) {
-            formulaDisplay.text('Ready to build...').addClass('empty');
+            formulaDisplay.val('');
             rollButton.prop('disabled', true);
         } else {
-            formulaDisplay.text(diceFormula.join(' ')).removeClass('empty');
+            formulaDisplay.val(formulaText);
             rollButton.prop('disabled', false);
         }
     }
 
+    // Sync manual edits back to formula array
+    formulaDisplay.on('input', function (e) {
+        e.stopPropagation();
+        const value = $(this).val().trim();
+        if (value) {
+            // Parse the input into formula array (simple split on spaces for now)
+            diceFormula = value.split(/\s+/).filter(Boolean);
+            rollButton.prop('disabled', false);
+        } else {
+            diceFormula = [];
+            rollButton.prop('disabled', true);
+        }
+    });
+
     function addToFormula(value) {
-        // Smart formatting: add '+' between dice/modifiers if needed
+        // Check if clicking same die type consecutively - consolidate quantity
         if (diceFormula.length > 0) {
             const lastItem = diceFormula[diceFormula.length - 1];
+            const diceMatch = lastItem.match(/^(\d*)d(\d+|F|\%)$/);
+            const isDieRoll = value.match(/^d(\d+|F|\%)$/);
+            
+            // If last item is a die and we're adding the same die type, consolidate
+            if (diceMatch && isDieRoll && value === `d${diceMatch[2]}`) {
+                const qty = parseInt(diceMatch[1] || '1') + 1;
+                diceFormula[diceFormula.length - 1] = `${qty}d${diceMatch[2]}`;
+                updateFormulaDisplay();
+                return;
+            }
+            
+            // Smart formatting: add '+' between dice/modifiers if needed
             const needsOperator = !lastItem.match(/[+\-]$/) && !value.match(/^[+\-!khdl]/);
             if (needsOperator && !value.match(/^[+\-!khdl]/)) {
                 diceFormula.push('+');
@@ -217,6 +244,103 @@ async function addDiceRollButton() {
         }
         diceFormula.push(value);
         updateFormulaDisplay();
+    }
+
+    // Ability selector popup
+    async function showAbilitySelector() {
+        const abilitiesHtml = `
+            <div class="ability-selector-grid" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; padding: 10px;">
+                <button class="menu_button ability-choice" data-ability="Strength">STR</button>
+                <button class="menu_button ability-choice" data-ability="Dexterity">DEX</button>
+                <button class="menu_button ability-choice" data-ability="Constitution">CON</button>
+                <button class="menu_button ability-choice" data-ability="Intelligence">INT</button>
+                <button class="menu_button ability-choice" data-ability="Wisdom">WIS</button>
+                <button class="menu_button ability-choice" data-ability="Charisma">CHA</button>
+            </div>
+        `;
+        
+        const container = $('<div>').html(abilitiesHtml);
+        $(document.body).append(container);
+        
+        return new Promise((resolve) => {
+            container.find('.ability-choice').on('click', function() {
+                const ability = $(this).data('ability');
+                container.remove();
+                resolve(ability);
+            });
+            
+            // Handle popup close/cancel
+            setTimeout(() => {
+                if (container.parent().length === 0) {
+                    resolve(null);
+                }
+            }, 100);
+        });
+    }
+
+    // Skill selector popup
+    async function showSkillSelector() {
+        const skills = [
+            'Acrobatics', 'Animal Handling', 'Arcana', 'Athletics',
+            'Deception', 'History', 'Insight', 'Intimidation',
+            'Investigation', 'Medicine', 'Nature', 'Perception',
+            'Performance', 'Persuasion', 'Religion', 'Sleight of Hand',
+            'Stealth', 'Survival'
+        ];
+        
+        const skillsHtml = `
+            <div class="skill-selector-grid" style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; padding: 10px; max-height: 400px; overflow-y: auto;">
+                ${skills.map(skill => `<button class="menu_button skill-choice" data-skill="${skill}">${skill}</button>`).join('')}
+            </div>
+        `;
+        
+        const container = $('<div>').html(skillsHtml);
+        $(document.body).append(container);
+        
+        return new Promise((resolve) => {
+            container.find('.skill-choice').on('click', function() {
+                const skill = $(this).data('skill');
+                container.remove();
+                resolve(skill);
+            });
+            
+            // Handle popup close/cancel
+            setTimeout(() => {
+                if (container.parent().length === 0) {
+                    resolve(null);
+                }
+            }, 100);
+        });
+    }
+
+    // Hit dice selector popup
+    async function showHitDiceSelector() {
+        const hitDiceHtml = `
+            <div class="hitdice-selector-grid" style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; padding: 10px;">
+                <button class="menu_button hitdice-choice" data-die="d6">d6</button>
+                <button class="menu_button hitdice-choice" data-die="d8">d8</button>
+                <button class="menu_button hitdice-choice" data-die="d10">d10</button>
+                <button class="menu_button hitdice-choice" data-die="d12">d12</button>
+            </div>
+        `;
+        
+        const container = $('<div>').html(hitDiceHtml);
+        $(document.body).append(container);
+        
+        return new Promise((resolve) => {
+            container.find('.hitdice-choice').on('click', function() {
+                const die = $(this).data('die');
+                container.remove();
+                resolve(die);
+            });
+            
+            // Handle popup close/cancel
+            setTimeout(() => {
+                if (container.parent().length === 0) {
+                    resolve(null);
+                }
+            }, 100);
+        });
     }
 
     // Dice type buttons
@@ -234,11 +358,40 @@ async function addDiceRollButton() {
     });
 
     // Preset buttons
-    $('.dice-preset-btn').on('click', function (e) {
+    $('.dice-preset-btn').on('click', async function (e) {
         e.stopPropagation();
         const formula = $(this).data('formula');
         const description = $(this).data('description');
+        const requiresSelection = $(this).data('requires-selection');
         
+        // Handle presets that need user selection
+        if (requiresSelection === 'ability') {
+            const ability = await showAbilitySelector();
+            if (ability) {
+                diceFormula = ['d20'];
+                descriptionInput.val(`${ability} Check`);
+                updateFormulaDisplay();
+            }
+            return;
+        } else if (requiresSelection === 'skill') {
+            const skill = await showSkillSelector();
+            if (skill) {
+                diceFormula = ['d20'];
+                descriptionInput.val(skill);
+                updateFormulaDisplay();
+            }
+            return;
+        } else if (requiresSelection === 'hitdice') {
+            const die = await showHitDiceSelector();
+            if (die) {
+                diceFormula = [die];
+                descriptionInput.val('Hit Dice');
+                updateFormulaDisplay();
+            }
+            return;
+        }
+        
+        // Standard preset handling
         diceFormula = [formula];
         updateFormulaDisplay();
         

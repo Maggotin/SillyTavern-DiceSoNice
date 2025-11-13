@@ -126,9 +126,10 @@ function getDiceRoll() {
  * Roll the dice using RPG Dice Roller library.
  * @param {string} customDiceFormula Dice formula
  * @param {boolean} quiet Suppress chat output
+ * @param {string} description Optional roll description
  * @returns {Promise<string>} Roll result
  */
-async function doDiceRoll(customDiceFormula, quiet = false) {
+async function doDiceRoll(customDiceFormula, quiet = false, description = '') {
     let value = typeof customDiceFormula === 'string' ? customDiceFormula.trim() : $(this).data('value');
 
     if (value == 'custom') {
@@ -151,7 +152,8 @@ async function doDiceRoll(customDiceFormula, quiet = false) {
         
         if (!quiet) {
             const context = getContext();
-            context.sendSystemMessage('generic', `${context.name1} rolls a ${value}. The result is: ${resultString}`, { isSmallSys: true });
+            const rollLabel = description ? `${description}: ${value}` : value;
+            context.sendSystemMessage('generic', `${context.name1} rolls ${rollLabel}. The result is: ${resultString}`, { isSmallSys: true });
         }
         
         return resultString;
@@ -258,16 +260,11 @@ async function addDiceRollButton() {
     rollButton.on('click', function (e) {
         e.stopPropagation();
         if (diceFormula.length > 0) {
-            let formula = diceFormula.join('').replace(/\s+/g, '');
-            
-            // Add description if provided (using RPG Dice Roller notation: {description}formula)
+            const formula = diceFormula.join('').replace(/\s+/g, '');
             const description = descriptionInput.val().trim();
-            if (description) {
-                formula = `{${description}}${formula}`;
-            }
             
             dropdown.fadeOut(animation_duration);
-            doDiceRoll(formula, false);
+            doDiceRoll(formula, false, description);
             diceFormula = [];
             descriptionInput.val('');
             updateFormulaDisplay();

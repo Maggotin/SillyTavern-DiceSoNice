@@ -265,48 +265,6 @@ function registerFunctionTools() {
     }
 }
 
-function registerMacros() {
-    try {
-        const { registerMacro } = SillyTavern.getContext();
-
-        const rollDice = (...macroArgs) => {
-            console.log('Dice (Advanced): Macro args:', macroArgs);
-            const [formulaArg] = macroArgs.slice(-1); // try last argument first
-            const input = String(formulaArg ?? '').trim();
-            console.log('Dice (Advanced): Parsed input from args:', input);
-            if (!input) {
-                return '[Error: Empty dice formula]';
-            }
-
-            const formula = input.replace(/['"]/g, '');
-            console.log('Dice (Advanced): Clean formula:', formula);
-
-            const DiceRoll = getDiceRoll();
-            if (!DiceRoll) {
-                console.error('Dice (Advanced): DiceRoll constructor not found');
-                return '[Dice roller not loaded]';
-            }
-
-            try {
-                const roll = new DiceRoll(formula);
-                const result = String(roll.total);
-                console.log('Dice (Advanced): Macro result for', formula, '=', result, '| output:', roll.output);
-                return result;
-            } catch (error) {
-                console.error('Dice (Advanced): Macro roll failed for formula:', formula, error);
-                return '[Invalid dice formula]';
-            }
-        };
-
-        registerMacro('rolls', rollDice);
-        registerMacro('rolls::{formula}', (nonce, formula) => rollDice(formula));
-        console.log('Dice: Advanced "rolls" macros registered (simple + arg variant)');
-
-    } catch (error) {
-        console.error('Dice: Error registering macros', error);
-    }
-}
-
 jQuery(async function () {
     try {
         // Load dice roller library first
@@ -314,7 +272,6 @@ jQuery(async function () {
         
         await addDiceRollButton();
         registerFunctionTools();
-        registerMacros();
         SlashCommandParser.addCommandObject(SlashCommand.fromProps({
             name: 'roll',
             aliases: ['r', 'rolls'],

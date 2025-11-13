@@ -1,5 +1,6 @@
 <div id="dice_dropdown">
     <ul class="list-group">
+        <!-- Basic rolls -->
         <li class="list-group-item" data-value="d4">d4</li>
         <li class="list-group-item" data-value="d6">d6</li>
         <li class="list-group-item" data-value="d8">d8</li>
@@ -7,7 +8,17 @@
         <li class="list-group-item" data-value="d12">d12</li>
         <li class="list-group-item" data-value="d20">d20</li>
         <li class="list-group-item" data-value="d100">d100</li>
-        <li class="list-group-item" data-value="custom">...</li>
+
+        <!-- Common advanced rolls using RPG Dice Roller syntax -->
+        <li class="list-group-item" data-value="2d20kh1">d20 (advantage, 2d20kh1)</li>
+        <li class="list-group-item" data-value="2d20kl1">d20 (disadvantage, 2d20kl1)</li>
+        <li class="list-group-item" data-value="4d6kh3">4d6 (keep highest 3, 4d6kh3)</li>
+        <li class="list-group-item" data-value="3d6+2">3d6+2</li>
+        <li class="list-group-item" data-value="2d6+1d4">2d6+1d4</li>
+        <li class="list-group-item" data-value="2d6+3">2d6+3</li>
+
+        <!-- Custom formula -->
+        <li class="list-group-item" data-value="custom">Custom formula…</li>
     </ul>
 </div>
 

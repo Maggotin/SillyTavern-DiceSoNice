@@ -507,6 +507,37 @@ function registerFunctionTools() {
     }
 }
 
+function registerMacros() {
+    try {
+        const { macros } = SillyTavern.getContext();
+        if (!macros?.register) {
+            console.debug('Dice: macros.register not available');
+            return;
+        }
+
+        macros.register('dice', {
+            description: 'Rolls dice using advanced RPG notation and returns the result. Supports keep/drop, exploding, rerolling, and more.',
+            unnamedArgs: [
+                { name: 'formula', description: 'Dice formula (e.g., 2d6, 4d6kh3, 2d20!, 1d20+5)' },
+            ],
+            handler: ({ unnamedArgs: [formula] }) => {
+                if (!formula) return '';
+                const DiceRoll = getDiceRoll();
+                if (!DiceRoll) return '[Dice roller not loaded]';
+                try {
+                    const roll = new DiceRoll(formula);
+                    return String(roll.total);
+                } catch {
+                    return '[Invalid dice formula]';
+                }
+            },
+        });
+        console.log('Dice: Registered {{dice}} macro');
+    } catch (error) {
+        console.error('Dice: Error registering macros', error);
+    }
+}
+
 jQuery(async function () {
     try {
         // Load dice roller library first
@@ -514,6 +545,7 @@ jQuery(async function () {
         
         await addDiceRollButton();
         registerFunctionTools();
+        registerMacros();
         SlashCommandParser.addCommandObject(SlashCommand.fromProps({
             name: 'roll',
             aliases: ['r', 'rolls'],

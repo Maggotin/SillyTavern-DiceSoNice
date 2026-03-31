@@ -516,9 +516,20 @@ function registerMacros() {
         }
 
         macros.register('dice', {
-            description: 'Rolls dice using advanced RPG notation and returns the result. Supports keep/drop, exploding, rerolling, and more.',
+            description: 'Rolls dice using advanced RPG notation (e.g. {{dice 1d20+5}}). Supports keep/drop, exploding, rerolling, target success, and all RPG Dice Roller notation.',
+            category: macros.category.RANDOMIZATION,
+            returnType: 'integer',
+            returns: 'Dice roll result.',
+            exampleUsage: [
+                '{{dice::1d20}}',
+                '{{dice::4d6kh3}}',
+                '{{dice::2d20kh1}}',
+                '{{dice::1d20+5}}',
+                '{{dice::3d6!}}',
+                '{{dice::5d10>=8}}',
+            ],
             unnamedArgs: [
-                { name: 'formula', description: 'Dice formula (e.g., 2d6, 4d6kh3, 2d20!, 1d20+5)' },
+                { name: 'formula', description: 'Dice formula using RPG Dice Roller notation (e.g. 1d20, 4d6kh3, 2d20!, 1d20+5)' },
             ],
             handler: ({ unnamedArgs: [formula] }) => {
                 if (!formula) return '';

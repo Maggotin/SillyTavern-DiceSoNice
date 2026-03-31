@@ -1,6 +1,6 @@
 # SillyTavern-DiceSoNice
 
-A comprehensive dice rolling extension for SillyTavern with support for standard and advanced dice notation.
+A comprehensive dice rolling extension for SillyTavern with support for standard and advanced dice notation, powered by the [RPG Dice Roller](https://dice-roller.github.io/documentation/) library.
 
 ## How to install
 
@@ -12,11 +12,72 @@ https://github.com/Maggotin/SillyTavern-DiceSoNice
 
 ## How to use
 
-### Via the function tool
+This extension provides four ways to roll dice, each suited for different situations:
 
-Requires a compatible Chat Completion backend. See [Function Calling](https://docs.sillytavern.app/for-contributors/function-calling/) for more information.
+| Method | Best for | Output |
+|---|---|---|
+| `{{dice}}` macro | Embedding results in prompts, cards, STscript | Number only |
+| `/roll` slash command | Rolling in chat with visible results | Full breakdown in chat |
+| Function tool | AI-triggered rolls during conversation | Result returned to AI |
+| Wand menu | Quick manual rolls via UI | Full breakdown in chat |
 
-To roll the dice, just ask for it. For example:
+### `{{dice}}` macro
+
+Requires the **Experimental Macro Engine** (User Settings > Chat/Message Handling).
+
+Use anywhere macros work — character cards, prompt templates, STscript, etc. Returns just the numeric result.
+
+```txt
+{{dice 1d20}}          → e.g. 14
+{{dice 4d6kh3}}        → e.g. 13
+{{dice 2d20kh1}}       → e.g. 17
+{{dice 1d20+5}}        → e.g. 19
+{{dice 3d6!}}          → e.g. 22
+{{dice 5d10>=8}}       → e.g. 2
+```
+
+**In a character card or prompt:**
+
+```txt
+{{char}} swings their sword. The attack roll is {{dice 1d20+5}} against AC 15.
+They deal {{dice 2d6+3}} slashing damage.
+```
+
+**In STscript:**
+
+```stscript
+/setvar key=attack {{dice 1d20+5}}
+/setvar key=damage {{dice 2d6+3}}
+/sys {{char}} rolls {{getvar::attack}} to hit and deals {{getvar::damage}} damage.
+```
+
+### `/roll` slash command
+
+Rolls dice and posts the result as a system message in chat with a full breakdown.
+
+```txt
+/roll 2d6                    Roll two 6-sided dice
+/r 1d20+5                    Short alias
+/roll 4d6kh3                 Roll 4d6, keep highest 3
+/roll 3d8 quiet:true         Roll without posting to chat
+/roll 2d6+3 # Fire damage   Roll with a description label
+```
+
+The `/roll` command shows detailed output including which dice were kept, dropped, exploded, etc. Use `quiet:true` to suppress the chat message and just get the value (useful in STscript pipelines).
+
+**STscript with /roll:**
+
+```stscript
+/roll 1d20+5 quiet:true | /setvar key=attack
+/roll 2d6+3 quiet:true | /setvar key=damage
+/sys Attack: {{getvar::attack}}, Damage: {{getvar::damage}}
+```
+
+### Function tool (AI integration)
+
+Requires a compatible Chat Completion backend. See [Function Calling](https://docs.sillytavern.app/for-contributors/function-calling/) for more information. Enable in the extension settings.
+
+The AI can trigger dice rolls during conversation. Just ask naturally:
 
 ```txt
 Roll a d20
@@ -25,219 +86,248 @@ Roll a d20 and reroll any 1s
 Roll some fudge dice
 ```
 
-### Via the wand menu
+### Wand menu
 
-A set of classic D&amp;D dice for all your dice rolling needs. Dice rolls are just for show and are not visible in AI prompts.
+A visual dice roller in the extensions wand menu.
 
 1. Open the wand menu.
 2. Click on the "Roll Dice" item.
-3. Select the dice you want to roll:
-   - Standard dice (d4, d6, d8, d10, d12, d20, d100)
-   - Fudge/Fate dice (dF)
-   - Target Roll (for success/failure counting)
-   - Custom Formula (for advanced dice notation)
+3. Use the dice builder to construct a formula, or enter a custom one.
 
-### Via slash commands
+---
 
-You can use the `/roll` or `/r` slash command to roll dice directly in the chat:
+## Dice Notation Reference
 
-```txt
-/roll 2d6       # Roll two 6-sided dice
-/r 1d20+5       # Short alias for roll command
-/roll 3d8 quiet:true  # Roll dice without displaying in chat
-```
+All notation below works with every method (`{{dice}}`, `/roll`, function tool, wand menu). This extension uses the [RPG Dice Roller](https://dice-roller.github.io/documentation/) library — the full library documentation is available [here](https://dice-roller.github.io/documentation/guide/notation/dice.html).
 
-## Advanced Dice Notation
-
-This extension supports advanced dice notation using the [RPG Dice Roller](https://dice-roller.github.io/documentation/) library. Below is a comprehensive guide to all supported notation types.
-
-### Basic Dice Notation
+### Basic Rolls
 
 ```
-NdS
+NdS       N dice with S sides (N defaults to 1)
 ```
 
-Where:
-- `N` is the number of dice to roll (optional, defaults to 1 if omitted)
-- `d` is the delimiter indicating a die roll
-- `S` is the number of sides on each die
-
-Examples:
-- `d6` - Roll a single 6-sided die
-- `2d20` - Roll two 20-sided dice
-- `4d6` - Roll four 6-sided dice
-
-### Special Dice Types
-
 ```
-d%    # Percentile die (d100)
-dF    # Fudge/Fate die (-1, 0, or +1)
+d6        Roll a single 6-sided die
+2d20      Roll two 20-sided dice
+4d6       Roll four 6-sided dice
+d%        Percentile die (same as d100)
+4dF       Four Fudge/Fate dice (-1, 0, or +1 each)
+dF.1      Fudge variant (4 blanks, 1 plus, 1 minus)
 ```
 
-Examples:
-- `d%` - Roll a percentile die (1-100)
-- `4dF` - Roll four Fudge/Fate dice
-
-### Arithmetic Modifiers
+### Arithmetic & Math Functions
 
 ```
-NdS+X   # Add X to the result
-NdS-X   # Subtract X from the result
-NdS*X   # Multiply the result by X
-NdS/X   # Divide the result by X
+1d20+5       Add 5
+2d6-1        Subtract 1
+3d10*2       Multiply by 2
+4d6/2        Divide by 2
+3d20**4      Exponent (power of 4)
+d15%2        Modulus (remainder)
+(1d6+2)*3    Parenthesis for order of operations
+(4-2)d10     Use math to determine number of dice
+3d(2*6)      Use math to determine die sides
 ```
 
-Examples:
-- `1d20+5` - Roll a d20 and add 5
-- `2d6-1` - Roll 2d6 and subtract 1
-- `3d10*2` - Roll 3d10 and multiply by 2
-- `4d6/2` - Roll 4d6 and divide by 2
-
-### Keep/Drop Dice
+Math functions: `abs`, `ceil`, `cos`, `exp`, `floor`, `log`, `max`, `min`, `pow`, `round`, `sign`, `sin`, `sqrt`, `tan`
 
 ```
-NdSkH   # Keep highest H dice
-NdSkL   # Keep lowest L dice
-NdSdH   # Drop highest H dice
-NdSdL   # Drop lowest L dice
+round(4d10/3)    Round the result
+floor(2d6/2)     Round down
+ceil(3d8/2)      Round up
+abs(2d6-10)      Absolute value
+max(2d6, 2d8)    Higher of two rolls
+min(4d10, 3d12)  Lower of two rolls
 ```
 
-Examples:
-- `4d6k3` - Roll 4d6 and keep the highest 3 (common for D&D ability scores)
-- `2d20kh1` - Roll 2d20 and keep the highest (advantage in D&D 5e)
-- `2d20kl1` - Roll 2d20 and keep the lowest (disadvantage in D&D 5e)
-- `5d10d2` - Roll 5d10 and drop the lowest 2
+### Min / Max Modifiers
+
+```
+4d6min3      Any roll below 3 counts as 3
+4d6max3      Any roll above 3 counts as 3
+```
 
 ### Exploding Dice
 
-```
-NdS!    # Explode on maximum value
-NdS!X   # Explode on value X
-NdS!>X  # Explode on values greater than X
-NdS!<X  # Explode on values less than X
-```
-
-Examples:
-- `3d6!` - Roll 3d6, and for each 6, roll an additional d6
-- `3d6!5` - Roll 3d6, and for each 5 or 6, roll an additional d6
-- `3d6!>4` - Roll 3d6, and for each result greater than 4, roll an additional d6
-
-### Compounding Exploding Dice
+When a die hits the trigger value, roll another die and add it.
 
 ```
-NdS!!    # Compound on maximum value
-NdS!!X   # Compound on value X
-NdS!!>X  # Compound on values greater than X
-NdS!!<X  # Compound on values less than X
+3d6!         Explode on max (6): [4, 6!, 6!, 2] = 18
+3d6!!        Compound — add re-rolls to same die: [4, 14!!] = 18
+3d6!p        Penetrate — subtract 1 from re-rolls: [6!p, 5!p, 3, 1] = 15
+3d6!!p       Compound + penetrate
 ```
 
-Examples:
-- `3d6!!` - Roll 3d6, and for each 6, roll another d6 and add to the same die
-
-### Penetrating Exploding Dice
+With [compare points](#compare-points):
 
 ```
-NdS!p    # Penetrate on maximum value
-NdS!pX   # Penetrate on value X
-NdS!p>X  # Penetrate on values greater than X
-NdS!p<X  # Penetrate on values less than X
+3d6!>=5      Explode on 5 or 6
+3d6!!>4      Compound on rolls > 4
+3d6!p=6      Penetrate only on 6
 ```
 
-Examples:
-- `3d6!p` - Roll 3d6, and for each 6, roll another d6 and subtract 1 from the result
+### Re-roll
 
-### Rerolling Dice
-
-```
-NdSr    # Reroll on minimum value
-NdSrX   # Reroll on value X
-NdSr>X  # Reroll on values greater than X
-NdSr<X  # Reroll on values less than X
-```
-
-Examples:
-- `3d6r` - Roll 3d6 and reroll any 1s once
-- `3d6r2` - Roll 3d6 and reroll any 1s or 2s once
-- `3d6r<3` - Roll 3d6 and reroll any values less than 3 once
-
-### Rerolling Dice Repeatedly
+Discard the roll and roll again. `r` keeps re-rolling, `ro` re-rolls once.
 
 ```
-NdSrr    # Reroll repeatedly on minimum value
-NdSrrX   # Reroll repeatedly on value X
-NdSrr>X  # Reroll repeatedly on values greater than X
-NdSrr<X  # Reroll repeatedly on values less than X
+d6r          Re-roll 1s until no 1s remain
+d6ro         Re-roll 1s once (may still be a 1)
+3d6r<3       Re-roll anything less than 3, repeatedly
+3d6ro<=2     Re-roll values ≤ 2, once each
 ```
 
-Examples:
-- `3d6rr` - Roll 3d6 and reroll any 1s until no more 1s appear
-- `3d6rr<3` - Roll 3d6 and reroll any values less than 3 until no more appear
+### Unique
 
-### Target Success/Failure Counting
+Re-roll duplicates until all dice show different values.
 
 ```
-NdSt[X]   # Target success (count values >= X)
-NdSf[X]   # Target failure (count values <= X)
+4d6u         All four must be unique
+4d6uo        Re-roll duplicates once (may still have dupes)
+4d6u=5       Only re-roll duplicates that equal 5
 ```
 
-Examples:
-- `6d10t[8]` - Roll 6d10 and count successes (values >= 8)
-- `6d10f[2]` - Roll 6d10 and count failures (values <= 2)
+### Keep / Drop
+
+```
+4d6k3        Keep highest 3 (D&D ability scores)
+4d6kh3       Keep highest 3 (explicit)
+2d20kh1      Keep highest (D&D advantage)
+2d20kl1      Keep lowest (D&D disadvantage)
+4d10d1       Drop lowest 1
+4d10dl2      Drop lowest 2 (explicit)
+4d10dh1      Drop highest 1
+4d10dh1dl1   Drop highest and lowest (trimmed average)
+```
+
+### Target Success (Dice Pool)
+
+Count how many dice meet a condition instead of summing values:
+
+```
+5d10>=8      Count rolls ≥ 8 (World of Darkness): [2, 4, 6*, 3, 8*] = 2
+4d6>4        Count rolls > 4: [1, 3, 5*, 6*] = 2
+6d10>=6      Count successes (Shadowrun style)
+2d6=6        Only 6s count: [4, 6*] = 1
+```
+
+### Target Failure
+
+Must follow a success target. Each failure subtracts 1 from the success count:
+
+```
+4d6>4f<3     Rolls > 4 are successes, rolls < 3 subtract: [2_, 5*, 4, 5*] = 1
+```
+
+### Critical Success / Failure
+
+Visual markers only — no effect on values:
+
+```
+2d20cs         Highlight natural 20s as critical success
+2d20cf         Highlight natural 1s as critical failure
+4d10cs>7cf<3   Highlight 8+ as crit success, ≤ 2 as crit failure
+```
+
+### Sorting
+
+```
+4d6s         Sort ascending: [1, 3, 4, 5]
+4d6sa        Sort ascending (explicit)
+4d6sd        Sort descending: [5, 4, 3, 1]
+```
 
 ### Group Rolls
 
-```
-{2d6, 1d8}   # Roll multiple dice groups
-{2d6, 1d8}k1 # Roll multiple dice groups and keep highest group
-```
+Roll multiple expressions as separate groups:
 
-Examples:
-- `{2d6, 1d8}` - Roll 2d6 and 1d8 as separate groups
-- `{2d6, 1d8}k1` - Roll 2d6 and 1d8 and keep the highest group
+```
+{2d6, 1d8}       Roll groups separately, sum totals
+{2d6, 1d8}k1     Keep the group with the highest total
+{2d6, 1d8}d1     Drop the group with the lowest total
+{4d6+2d8, 3d20+3, 5d10+1}>40   Count groups totaling > 40 as successes
+```
 
 ### Roll Descriptions
 
+Add a label **after** the dice notation. Descriptions are not parsed as notation.
+
+**Inline** — use `#` or `//` after the roll:
+
 ```
-[description] 2d6   # Add a description to a roll
+4d6 # Fire damage
+2d10 // Ice damage
+4d6dl2 // Drop the lowest two
 ```
 
-Examples:
-- `[attack] 1d20+5` - Roll 1d20+5 with the description "attack"
-- `[damage] 2d6+3` - Roll 2d6+3 with the description "damage"
+**Block** — use `[ ... ]` or `/* ... */` after the roll:
+
+```
+1d20+5 [attack]
+2d6+3 [damage]
+1d20+2 /* saving throw */
+{4d6, 2d10} /* multiple damage types */
+```
+
+Anything inside a description is ignored: `2d10 // bonus 2d10! / 3` won't parse the extra dice.
+
+### Compare Points
+
+Used by exploding, re-roll, unique, target, and critical modifiers:
+
+```
+=X       Equal to X
+!=X      Not equal to X
+<>X      Not equal to X (alternative — required with exploding, see below)
+>X       Greater than X
+<X       Less than X
+>=X      Greater than or equal to X
+<=X      Less than or equal to X
+```
+
+**`!=` trap with exploding dice:** `2d6!!=4` looks like "explode on not-4" but actually creates a compound roll on 4. Use `<>` instead:
+
+```
+2d6!!=4      WRONG — this compounds on 4
+2d6!<>4      Correct — explode on any value that isn't 4
+```
+
+**Target after compare-point modifiers:** A target compare point can't directly follow a modifier that already uses one, because it'll be read as part of that modifier:
+
+```
+2d6!>3       Means: explode on rolls > 3 (NOT "target > 3 with exploding")
+2d6>3!       Correct: target success > 3, explode on max
+2d6>3!<4     Target success > 3, explode on rolls < 4
+```
 
 ### Combining Modifiers
 
-You can combine these modifiers for complex dice expressions:
+Modifiers run in a fixed order regardless of notation order:
 
 ```
-4d6k3+2        # Roll 4d6, keep highest 3, add 2
-2d20r<2kh1     # Roll 2d20, reroll 1s, keep highest (super advantage)
-3d6!+1d8       # Roll 3d6 with explosions, plus 1d8
-6d10t[8]       # Roll 6d10 and count successes (World of Darkness style)
-{2d6!!, 1d8!}k1 # Roll exploding 2d6 and exploding 1d8, keep highest group
+4d6kh3+2          Keep highest 3, add 2
+2d20ro<2kh1       Re-roll 1s once, keep highest (super advantage)
+3d6!+1d8          Exploding 3d6, plus 1d8
+5d10>=8           Count successes ≥ 8 (World of Darkness)
+4d6min3kh3        Min value 3, keep highest 3
+4d10cs>7cf<3sd    Mark crits, sort descending
+{2d6!!, 1d8!}k1   Exploding groups, keep highest
 ```
 
-## Detailed Roll Information
+**Modifier execution order:** min → max → explode/compound/penetrate → re-roll → unique → keep → drop → target success → target failure → critical success → critical failure → sorting
 
-When using advanced dice notation, the extension will display detailed information about the roll:
-
-- For keep/drop modifiers: Shows which dice were kept and which were dropped
-- For reroll modifiers: Shows which dice were rerolled
-- For exploding dice: Shows which dice exploded
-- For target success/failure: Shows the number of successes/failures
-
-This helps players understand exactly how the final result was calculated.
+---
 
 ## Powered by RPG Dice Roller
 
-This extension uses the [RPG Dice Roller](https://dice-roller.github.io/documentation/) library for advanced dice notation support. For more information about the library and its features, visit the [documentation](https://dice-roller.github.io/documentation/).
+This extension uses the [RPG Dice Roller](https://dice-roller.github.io/documentation/) library for dice notation. For the complete notation reference, visit the [documentation](https://dice-roller.github.io/documentation/).
 
 RPG Dice Roller is licensed under the MIT License.
 
-Credits: 
-- Based on the original extension Extension-Dice by Cohee#1207, but enhanced with additional features and the RPG Dice Roller library.
+Credits:
+- Based on the original Extension-Dice by Cohee#1207, enhanced with the RPG Dice Roller library.
 - RPG Dice Roller library © 2018-2024 Lee Langley, licensed under MIT License.
 
 ## License
 
-This extension is licensed under the AGPL-3.0 license. Note that this license applies to the extension code only. The RPG Dice Roller library used by this extension is licensed separately under the MIT License.
+This extension is licensed under the AGPL-3.0 license. The RPG Dice Roller library is licensed separately under the MIT License.

@@ -111,6 +111,16 @@
     cursor: not-allowed;
 }
 
+.dice-description-wrapper {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.dice-description-wrapper #dice_description {
+    flex: 1;
+}
+
 .dice-selector-header {
     display: flex;
     align-items: center;
@@ -133,6 +143,8 @@
     display: flex;
     flex-direction: column;
     gap: 4px;
+    max-height: 50vh;
+    overflow-y: auto;
 }
 
 .dice-selector-choice {

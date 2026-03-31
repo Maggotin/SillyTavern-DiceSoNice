@@ -338,12 +338,18 @@ async function addDiceRollButton() {
         }
     });
 
-    // Clear button
+    // Clear formula button
     clearButton.on('click', function (e) {
         e.stopPropagation();
         diceFormula = [];
         descriptionInput.val('');
         updateFormulaDisplay();
+    });
+
+    // Clear description button
+    $('#dice_description_clear').on('click', function (e) {
+        e.stopPropagation();
+        descriptionInput.val('');
     });
 
     // Roll built formula

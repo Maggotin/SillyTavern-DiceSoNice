@@ -18,7 +18,12 @@
             <!-- Roll Description -->
             <div class="dice-builder-section">
                 <div class="dice-builder-label">Roll Description (Optional)</div>
-                <input type="text" id="dice_description" class="text_pole" placeholder="e.g., Initiative, Fireball damage..." />
+                <div class="dice-description-wrapper">
+                    <input type="text" id="dice_description" class="text_pole" placeholder="e.g., Initiative, Fireball damage..." />
+                    <button id="dice_description_clear" class="menu_button dice-clear-btn" title="Clear description">
+                        <i class="fa-solid fa-xmark"></i>
+                    </button>
+                </div>
             </div>
 
             <!-- Formula Display -->

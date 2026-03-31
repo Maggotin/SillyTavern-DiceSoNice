@@ -246,101 +246,34 @@ async function addDiceRollButton() {
         updateFormulaDisplay();
     }
 
-    // Ability selector popup
     async function showAbilitySelector() {
-        const abilitiesHtml = `
-            <div class="ability-selector-grid" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; padding: 10px;">
-                <button class="menu_button ability-choice" data-ability="Strength">STR</button>
-                <button class="menu_button ability-choice" data-ability="Dexterity">DEX</button>
-                <button class="menu_button ability-choice" data-ability="Constitution">CON</button>
-                <button class="menu_button ability-choice" data-ability="Intelligence">INT</button>
-                <button class="menu_button ability-choice" data-ability="Wisdom">WIS</button>
-                <button class="menu_button ability-choice" data-ability="Charisma">CHA</button>
-            </div>
-        `;
-        
-        const container = $('<div>').html(abilitiesHtml);
-        $(document.body).append(container);
-        
-        return new Promise((resolve) => {
-            container.find('.ability-choice').on('click', function() {
-                const ability = $(this).data('ability');
-                container.remove();
-                resolve(ability);
-            });
-            
-            // Handle popup close/cancel
-            setTimeout(() => {
-                if (container.parent().length === 0) {
-                    resolve(null);
-                }
-            }, 100);
-        });
+        const abilities = ['Strength', 'Dexterity', 'Constitution', 'Intelligence', 'Wisdom', 'Charisma'];
+        const html = abilities.map(a => `<label><input type="radio" name="dice_ability" value="${a}" />${a}</label>`).join('<br>');
+        const result = await callGenericPopup(html, POPUP_TYPE.CONFIRM, '', { okButton: 'Select', cancelButton: 'Cancel' });
+        if (!result) return null;
+        return $('input[name="dice_ability"]:checked').val() || null;
     }
 
-    // Skill selector popup
     async function showSkillSelector() {
         const skills = [
             'Acrobatics', 'Animal Handling', 'Arcana', 'Athletics',
             'Deception', 'History', 'Insight', 'Intimidation',
             'Investigation', 'Medicine', 'Nature', 'Perception',
             'Performance', 'Persuasion', 'Religion', 'Sleight of Hand',
-            'Stealth', 'Survival'
+            'Stealth', 'Survival',
         ];
-        
-        const skillsHtml = `
-            <div class="skill-selector-grid" style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; padding: 10px; max-height: 400px; overflow-y: auto;">
-                ${skills.map(skill => `<button class="menu_button skill-choice" data-skill="${skill}">${skill}</button>`).join('')}
-            </div>
-        `;
-        
-        const container = $('<div>').html(skillsHtml);
-        $(document.body).append(container);
-        
-        return new Promise((resolve) => {
-            container.find('.skill-choice').on('click', function() {
-                const skill = $(this).data('skill');
-                container.remove();
-                resolve(skill);
-            });
-            
-            // Handle popup close/cancel
-            setTimeout(() => {
-                if (container.parent().length === 0) {
-                    resolve(null);
-                }
-            }, 100);
-        });
+        const html = skills.map(s => `<label><input type="radio" name="dice_skill" value="${s}" />${s}</label>`).join('<br>');
+        const result = await callGenericPopup(html, POPUP_TYPE.CONFIRM, '', { okButton: 'Select', cancelButton: 'Cancel' });
+        if (!result) return null;
+        return $('input[name="dice_skill"]:checked').val() || null;
     }
 
-    // Hit dice selector popup
     async function showHitDiceSelector() {
-        const hitDiceHtml = `
-            <div class="hitdice-selector-grid" style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; padding: 10px;">
-                <button class="menu_button hitdice-choice" data-die="d6">d6</button>
-                <button class="menu_button hitdice-choice" data-die="d8">d8</button>
-                <button class="menu_button hitdice-choice" data-die="d10">d10</button>
-                <button class="menu_button hitdice-choice" data-die="d12">d12</button>
-            </div>
-        `;
-        
-        const container = $('<div>').html(hitDiceHtml);
-        $(document.body).append(container);
-        
-        return new Promise((resolve) => {
-            container.find('.hitdice-choice').on('click', function() {
-                const die = $(this).data('die');
-                container.remove();
-                resolve(die);
-            });
-            
-            // Handle popup close/cancel
-            setTimeout(() => {
-                if (container.parent().length === 0) {
-                    resolve(null);
-                }
-            }, 100);
-        });
+        const dice = ['d6', 'd8', 'd10', 'd12'];
+        const html = dice.map(d => `<label><input type="radio" name="dice_hitdie" value="${d}" />${d}</label>`).join('<br>');
+        const result = await callGenericPopup(html, POPUP_TYPE.CONFIRM, '', { okButton: 'Select', cancelButton: 'Cancel' });
+        if (!result) return null;
+        return $('input[name="dice_hitdie"]:checked').val() || null;
     }
 
     // Dice type buttons

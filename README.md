@@ -16,38 +16,43 @@ This extension provides four ways to roll dice, each suited for different situat
 
 | Method | Best for | Output |
 |---|---|---|
-| `{{dice}}` macro | Embedding results in prompts, cards, STscript | Number only |
+| `{{roll}}` / `{{dice}}` macro | Embedding results in prompts, cards, STscript | Number only |
 | `/roll` slash command | Rolling in chat with visible results | Full breakdown in chat |
 | Function tool | AI-triggered rolls during conversation | Result returned to AI |
 | Wand menu | Quick manual rolls via UI | Full breakdown in chat |
 
-### `{{dice}}` macro
+### `{{roll}}` / `{{dice}}` macro
 
 Requires the **Experimental Macro Engine** (User Settings > Chat/Message Handling).
+
+This extension overrides SillyTavern's built-in `{{roll}}` macro (which uses the limited `droll` library) with the full [RPG Dice Roller](https://dice-roller.github.io/documentation/) engine. `{{dice}}` is an alias that works identically. Use either — they share the same handler.
 
 Use anywhere macros work — character cards, prompt templates, STscript, etc. Returns just the numeric result.
 
 ```txt
-{{dice 1d20}}          → e.g. 14
-{{dice 4d6kh3}}        → e.g. 13
-{{dice 2d20kh1}}       → e.g. 17
-{{dice 1d20+5}}        → e.g. 19
-{{dice 3d6!}}          → e.g. 22
-{{dice 5d10>=8}}       → e.g. 2
+{{roll 1d20}}          → e.g. 14
+{{roll 4d6kh3}}        → e.g. 13
+{{roll 2d20kh1}}       → e.g. 17
+{{roll 1d20+5}}        → e.g. 19
+{{roll 3d6!}}          → e.g. 22
+{{roll 5d10>=8}}       → e.g. 2
+{{roll 6}}             → e.g. 4 (shorthand for 1d6)
 ```
+
+`{{dice ...}}` works exactly the same way for all of the above.
 
 **In a character card or prompt:**
 
 ```txt
-{{char}} swings their sword. The attack roll is {{dice 1d20+5}} against AC 15.
-They deal {{dice 2d6+3}} slashing damage.
+{{char}} swings their sword. The attack roll is {{roll 1d20+5}} against AC 15.
+They deal {{roll 2d6+3}} slashing damage.
 ```
 
 **In STscript:**
 
 ```stscript
-/setvar key=attack {{dice 1d20+5}}
-/setvar key=damage {{dice 2d6+3}}
+/setvar key=attack {{roll 1d20+5}}
+/setvar key=damage {{roll 2d6+3}}
 /sys {{char}} rolls {{getvar::attack}} to hit and deals {{getvar::damage}} damage.
 ```
 

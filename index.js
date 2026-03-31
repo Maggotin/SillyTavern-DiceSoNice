@@ -515,11 +515,34 @@ function registerMacros() {
             return;
         }
 
-        macros.register('dice', {
-            description: 'Rolls dice using advanced RPG notation (e.g. {{dice 1d20+5}}). Supports keep/drop, exploding, rerolling, target success, and all RPG Dice Roller notation.',
+        const diceHandler = ({ unnamedArgs: [formula] }) => {
+            if (!formula) return '';
+            if (/^\d+$/.test(formula)) {
+                formula = `1d${formula}`;
+            }
+            const DiceRoll = getDiceRoll();
+            if (!DiceRoll) return '[Dice roller not loaded]';
+            try {
+                const roll = new DiceRoll(formula);
+                return String(roll.total);
+            } catch {
+                return '[Invalid dice formula]';
+            }
+        };
+
+        const macroOptions = {
             category: macros.category.RANDOMIZATION,
             returnType: 'integer',
             returns: 'Dice roll result.',
+            unnamedArgs: [
+                { name: 'formula', description: 'Dice formula using RPG Dice Roller notation (e.g. 1d20, 4d6kh3, 2d20!, 1d20+5)' },
+            ],
+            handler: diceHandler,
+        };
+
+        macros.register('dice', {
+            ...macroOptions,
+            description: 'Rolls dice using advanced RPG notation (e.g. {{dice 1d20+5}}). Supports keep/drop, exploding, rerolling, target success, and all RPG Dice Roller notation.',
             exampleUsage: [
                 '{{dice::1d20}}',
                 '{{dice::4d6kh3}}',
@@ -528,22 +551,22 @@ function registerMacros() {
                 '{{dice::3d6!}}',
                 '{{dice::5d10>=8}}',
             ],
-            unnamedArgs: [
-                { name: 'formula', description: 'Dice formula using RPG Dice Roller notation (e.g. 1d20, 4d6kh3, 2d20!, 1d20+5)' },
-            ],
-            handler: ({ unnamedArgs: [formula] }) => {
-                if (!formula) return '';
-                const DiceRoll = getDiceRoll();
-                if (!DiceRoll) return '[Dice roller not loaded]';
-                try {
-                    const roll = new DiceRoll(formula);
-                    return String(roll.total);
-                } catch {
-                    return '[Invalid dice formula]';
-                }
-            },
         });
-        console.log('Dice: Registered {{dice}} macro');
+
+        macros.register('roll', {
+            ...macroOptions,
+            description: 'Rolls dice using advanced RPG notation (e.g. {{roll 1d20+5}}). Overrides built-in roll with full RPG Dice Roller support including keep/drop, exploding, rerolling, and target success.',
+            exampleUsage: [
+                '{{roll::1d20}}',
+                '{{roll::4d6kh3}}',
+                '{{roll::2d20kh1}}',
+                '{{roll::1d20+5}}',
+                '{{roll::3d6!}}',
+                '{{roll::5d10>=8}}',
+            ],
+        });
+
+        console.log('Dice: Registered {{dice}} and {{roll}} macros');
     } catch (error) {
         console.error('Dice: Error registering macros', error);
     }

@@ -246,35 +246,37 @@ async function addDiceRollButton() {
         updateFormulaDisplay();
     }
 
-    async function showAbilitySelector() {
-        const abilities = ['Strength', 'Dexterity', 'Constitution', 'Intelligence', 'Wisdom', 'Charisma'];
-        const html = abilities.map(a => `<label><input type="radio" name="dice_ability" value="${a}" />${a}</label>`).join('<br>');
-        const result = await callGenericPopup(html, POPUP_TYPE.CONFIRM, '', { okButton: 'Select', cancelButton: 'Cancel' });
-        if (!result) return null;
-        return $('input[name="dice_ability"]:checked').val() || null;
+    const selectorPanel = $('#dice_selector_panel');
+    const selectorTitle = $('#dice_selector_title');
+    const selectorButtons = $('#dice_selector_buttons');
+    const mainContent = $('#dice_main_content');
+
+    function showSelectorPanel(title, items, callback) {
+        selectorTitle.text(title);
+        selectorButtons.empty();
+        items.forEach(item => {
+            const btn = $('<button class="menu_button dice-selector-choice"></button>')
+                .text(item.label)
+                .on('click', function (e) {
+                    e.stopPropagation();
+                    hideSelectorPanel();
+                    callback(item.value);
+                });
+            selectorButtons.append(btn);
+        });
+        mainContent.hide();
+        selectorPanel.show();
     }
 
-    async function showSkillSelector() {
-        const skills = [
-            'Acrobatics', 'Animal Handling', 'Arcana', 'Athletics',
-            'Deception', 'History', 'Insight', 'Intimidation',
-            'Investigation', 'Medicine', 'Nature', 'Perception',
-            'Performance', 'Persuasion', 'Religion', 'Sleight of Hand',
-            'Stealth', 'Survival',
-        ];
-        const html = skills.map(s => `<label><input type="radio" name="dice_skill" value="${s}" />${s}</label>`).join('<br>');
-        const result = await callGenericPopup(html, POPUP_TYPE.CONFIRM, '', { okButton: 'Select', cancelButton: 'Cancel' });
-        if (!result) return null;
-        return $('input[name="dice_skill"]:checked').val() || null;
+    function hideSelectorPanel() {
+        selectorPanel.hide();
+        mainContent.show();
     }
 
-    async function showHitDiceSelector() {
-        const dice = ['d6', 'd8', 'd10', 'd12'];
-        const html = dice.map(d => `<label><input type="radio" name="dice_hitdie" value="${d}" />${d}</label>`).join('<br>');
-        const result = await callGenericPopup(html, POPUP_TYPE.CONFIRM, '', { okButton: 'Select', cancelButton: 'Cancel' });
-        if (!result) return null;
-        return $('input[name="dice_hitdie"]:checked').val() || null;
-    }
+    $('#dice_selector_back').on('click', function (e) {
+        e.stopPropagation();
+        hideSelectorPanel();
+    });
 
     // Dice type buttons
     $('.dice-type-btn').on('click', function (e) {
@@ -291,45 +293,47 @@ async function addDiceRollButton() {
     });
 
     // Preset buttons
-    $('.dice-preset-btn').on('click', async function (e) {
+    $('.dice-preset-btn').on('click', function (e) {
         e.stopPropagation();
         const formula = $(this).data('formula');
         const description = $(this).data('description');
         const requiresSelection = $(this).data('requires-selection');
-        
-        // Handle presets that need user selection
+
         if (requiresSelection === 'ability') {
-            const ability = await showAbilitySelector();
-            if (ability) {
+            const abilities = ['Strength', 'Dexterity', 'Constitution', 'Intelligence', 'Wisdom', 'Charisma'];
+            showSelectorPanel('Ability Check', abilities.map(a => ({ label: a, value: a })), (ability) => {
                 diceFormula = ['d20'];
                 descriptionInput.val(`${ability} Check`);
                 updateFormulaDisplay();
-            }
+            });
             return;
         } else if (requiresSelection === 'skill') {
-            const skill = await showSkillSelector();
-            if (skill) {
+            const skills = [
+                'Acrobatics', 'Animal Handling', 'Arcana', 'Athletics',
+                'Deception', 'History', 'Insight', 'Intimidation',
+                'Investigation', 'Medicine', 'Nature', 'Perception',
+                'Performance', 'Persuasion', 'Religion', 'Sleight of Hand',
+                'Stealth', 'Survival',
+            ];
+            showSelectorPanel('Skill Check', skills.map(s => ({ label: s, value: s })), (skill) => {
                 diceFormula = ['d20'];
                 descriptionInput.val(skill);
                 updateFormulaDisplay();
-            }
+            });
             return;
         } else if (requiresSelection === 'hitdice') {
-            const die = await showHitDiceSelector();
-            if (die) {
+            showSelectorPanel('Hit Dice', ['d6', 'd8', 'd10', 'd12'].map(d => ({ label: d, value: d })), (die) => {
                 diceFormula = [die];
                 descriptionInput.val('Hit Dice');
                 updateFormulaDisplay();
-            }
+            });
             return;
         }
-        
-        // Standard preset handling
+
         diceFormula = [formula];
         updateFormulaDisplay();
-        
-        // Auto-fill description if preset has one and field is empty
-        if (description && !descriptionInput.val().trim()) {
+
+        if (description) {
             descriptionInput.val(description);
         }
     });

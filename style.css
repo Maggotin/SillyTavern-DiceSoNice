@@ -110,3 +110,34 @@
     opacity: 0.5;
     cursor: not-allowed;
 }
+
+.dice-selector-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 6px;
+}
+
+.dice-selector-header .dice-builder-label {
+    margin: 0;
+    font-size: 13px;
+}
+
+#dice_selector_back {
+    padding: 4px 10px !important;
+    min-width: unset !important;
+    font-size: 12px;
+}
+
+.dice-selector-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.dice-selector-choice {
+    width: 100%;
+    text-align: left;
+    padding: 8px 12px !important;
+    font-size: 13px;
+}

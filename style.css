@@ -153,3 +153,28 @@
     padding: 8px 12px !important;
     font-size: 13px;
 }
+
+.dice-sendmode-buttons {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+}
+
+.dice-sendmode-btn {
+    padding: 6px 12px !important;
+    min-width: unset !important;
+    font-size: 13px;
+    opacity: 0.6;
+    transition: opacity 0.15s, transform 0.1s;
+}
+
+.dice-sendmode-btn:hover {
+    transform: scale(1.05);
+    opacity: 0.85;
+}
+
+.dice-sendmode-btn.active {
+    opacity: 1;
+    outline: 1px solid var(--SmartThemeBorderColor);
+    outline-offset: 1px;
+}

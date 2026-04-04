@@ -211,6 +211,7 @@ async function addDiceRollButton() {
 
     // Initialize dice builder state
     let diceFormula = [];
+    let selectedSendMode = 'smallsys';
     
     const formulaDisplay = $('#dice_formula');
     const rollButton = $('#dice_roll_built');
@@ -373,15 +374,24 @@ async function addDiceRollButton() {
         descriptionInput.val('');
     });
 
+    // Send mode toggle buttons
+    $('.dice-sendmode-btn').on('click', function (e) {
+        e.stopPropagation();
+        $('.dice-sendmode-btn').removeClass('active');
+        $(this).addClass('active');
+        selectedSendMode = $(this).data('sendmode');
+    });
+
     // Roll built formula
     rollButton.on('click', function (e) {
         e.stopPropagation();
         if (diceFormula.length > 0) {
             const formula = diceFormula.join('').replace(/\s+/g, '');
             const description = descriptionInput.val().trim();
-            
+            const quiet = selectedSendMode === 'none';
+
             dropdown.fadeOut(animation_duration);
-            doDiceRoll(formula, false, description);
+            doDiceRoll(formula, quiet, description, selectedSendMode);
             diceFormula = [];
             descriptionInput.val('');
             updateFormulaDisplay();
@@ -392,7 +402,8 @@ async function addDiceRollButton() {
     $('#dice_custom_input').on('click', async function (e) {
         e.stopPropagation();
         dropdown.fadeOut(animation_duration);
-        await doDiceRoll('custom', false);
+        const quiet = selectedSendMode === 'none';
+        await doDiceRoll('custom', quiet, '', selectedSendMode);
     });
 
     const popper = SillyTavern.libs.Popper.createPopper(button.get(0), dropdown.get(0), {

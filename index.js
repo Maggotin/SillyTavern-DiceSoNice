@@ -125,11 +125,12 @@ function getDiceRoll() {
 /**
  * Roll the dice using RPG Dice Roller library.
  * @param {string} customDiceFormula Dice formula
- * @param {boolean} quiet Suppress chat output
+ * @param {boolean} quiet Suppress chat output (legacy — prefer sendMode='none')
  * @param {string} description Optional roll description
+ * @param {'smallsys'|'sys'|'char'|'user'|'none'} sendMode How to send the result to chat
  * @returns {Promise<string>} Roll result
  */
-async function doDiceRoll(customDiceFormula, quiet = false, description = '') {
+async function doDiceRoll(customDiceFormula, quiet = false, description = '', sendMode = 'smallsys') {
     let value = typeof customDiceFormula === 'string' ? customDiceFormula.trim() : $(this).data('value');
 
     if (value == 'custom') {
@@ -149,13 +150,53 @@ async function doDiceRoll(customDiceFormula, quiet = false, description = '') {
     try {
         const roll = new DiceRoll(value);
         const resultString = `${roll.total} (${roll.output})`;
-        
-        if (!quiet) {
+
+        const effectiveMode = quiet ? 'none' : sendMode;
+
+        if (effectiveMode !== 'none') {
             const context = getContext();
             const rollLabel = description ? `${description}: ${value}` : value;
-            context.sendSystemMessage('generic', `${context.name1} rolls ${rollLabel}. The result is: ${resultString}`, { isSmallSys: true });
+            const messageText = `${context.name1} rolls ${rollLabel}. The result is: ${resultString}`;
+
+            switch (effectiveMode) {
+                case 'sys':
+                    context.addOneMessage({
+                        name: '',
+                        is_user: false,
+                        is_system: false,
+                        send_date: context.getMessageTimeStamp(),
+                        mes: messageText,
+                        force_avatar: true,
+                        extra: { type: 'narrator' },
+                    });
+                    break;
+                case 'char':
+                    context.addOneMessage({
+                        name: context.name2,
+                        is_user: false,
+                        is_system: false,
+                        send_date: context.getMessageTimeStamp(),
+                        mes: messageText,
+                        force_avatar: true,
+                    });
+                    break;
+                case 'user':
+                    context.addOneMessage({
+                        name: context.name1,
+                        is_user: true,
+                        is_system: false,
+                        send_date: context.getMessageTimeStamp(),
+                        mes: messageText,
+                        force_avatar: true,
+                    });
+                    break;
+                case 'smallsys':
+                default:
+                    context.sendSystemMessage('generic', messageText, { isSmallSys: true });
+                    break;
+            }
         }
-        
+
         return resultString;
     } catch (error) {
         console.error('Dice: Roll failed', error);
@@ -528,14 +569,22 @@ jQuery(async function () {
             aliases: ['r', 'rolls'],
             callback: (args, value) => {
                 const quiet = isTrueBoolean(String(args.quiet));
-                return doDiceRoll(String(value), quiet);
+                const sendMode = args.send ? String(args.send).toLowerCase() : 'smallsys';
+                return doDiceRoll(String(value), quiet, '', sendMode);
             },
-            helpString: 'Roll the dice using various formats (e.g., 2d6, 4d6kh3, 2d20!, 1d20+5).',
+            helpString: 'Roll the dice using various formats. Use <code>send=</code> to control how the result appears in chat: <code>sys</code> (narrator, visible to LLM), <code>char</code> (as character), <code>user</code> (as user), <code>smallsys</code> (default, user only), <code>none</code> (quiet).',
             returns: 'roll result',
             namedArgumentList: [
                 SlashCommandNamedArgument.fromProps({
+                    name: 'send',
+                    description: 'How to send the result: sys (narrator/visible to LLM), char (as character), user (as user), smallsys (default/user only), none (quiet)',
+                    isRequired: false,
+                    typeList: [ARGUMENT_TYPE.STRING],
+                    defaultValue: 'smallsys',
+                }),
+                SlashCommandNamedArgument.fromProps({
                     name: 'quiet',
-                    description: 'Do not display the result in chat',
+                    description: 'Do not display the result in chat (legacy — same as send=none)',
                     isRequired: false,
                     typeList: [ARGUMENT_TYPE.BOOLEAN],
                     defaultValue: String(false),

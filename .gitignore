@@ -2,6 +2,7 @@
 /.context/
 /.cursor/
 /.history/
+/.learnings/
 /log/
 
 # Node modules (if any)

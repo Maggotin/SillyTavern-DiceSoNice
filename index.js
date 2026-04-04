@@ -161,12 +161,14 @@ async function doDiceRoll(customDiceFormula, quiet = false, description = '', se
             switch (effectiveMode) {
                 case 'sys':
                     await context.executeSlashCommandsWithOptions(`/sys ${messageText}`);
+                    await context.executeSlashCommandsWithOptions('/trigger');
                     break;
                 case 'char':
                     await context.executeSlashCommandsWithOptions(`/sendas name="${context.name2}" ${messageText}`);
                     break;
                 case 'user':
                     await context.executeSlashCommandsWithOptions(`/send ${messageText}`);
+                    await context.executeSlashCommandsWithOptions('/trigger');
                     break;
                 case 'smallsys':
                 default:

@@ -3,6 +3,7 @@ import { getContext, renderExtensionTemplateAsync } from '../../../extensions.js
 import { POPUP_TYPE, callGenericPopup } from '../../../popup.js';
 import { SlashCommand } from '../../../slash-commands/SlashCommand.js';
 import { ARGUMENT_TYPE, SlashCommandArgument, SlashCommandNamedArgument } from '../../../slash-commands/SlashCommandArgument.js';
+import { SlashCommandEnumValue } from '../../../slash-commands/SlashCommandEnumValue.js';
 import { commonEnumProviders } from '../../../slash-commands/SlashCommandCommonEnumsProvider.js';
 import { SlashCommandParser } from '../../../slash-commands/SlashCommandParser.js';
 import { isTrueBoolean } from '../../../utils.js';
@@ -10,6 +11,8 @@ export { MODULE_NAME };
 
 const MODULE_NAME = 'dice';
 const TEMPLATE_PATH = 'third-party/SillyTavern-DiceSoNice';
+const MAX_ROLL_HISTORY = 50;
+const rollHistory = [];
 
 // Define default settings
 const defaultSettings = Object.freeze({
@@ -151,6 +154,19 @@ async function doDiceRoll(customDiceFormula, quiet = false, description = '', se
         const roll = new DiceRoll(value);
         const resultString = `${roll.total} (${roll.output})`;
 
+        rollHistory.push({
+            formula: value,
+            total: roll.total,
+            output: roll.output,
+            description,
+            sendMode: quiet ? 'none' : sendMode,
+            timestamp: Date.now(),
+        });
+        if (rollHistory.length > MAX_ROLL_HISTORY) {
+            rollHistory.shift();
+        }
+        updateRollHistoryPanel();
+
         const effectiveMode = quiet ? 'none' : sendMode;
 
         if (effectiveMode !== 'none') {
@@ -182,6 +198,106 @@ async function doDiceRoll(customDiceFormula, quiet = false, description = '', se
         console.error('Dice: Roll failed', error);
         toastr.warning('Invalid dice formula');
         return '[Invalid dice formula]';
+    }
+}
+
+let historyPanel = null;
+let historyTrigger = null;
+
+function initRollHistoryPanel() {
+    const trigger = document.createElement('div');
+    trigger.classList.add('dice-history-trigger', 'fa-solid', 'fa-fw', 'fa-scroll');
+    trigger.title = 'Roll History';
+    trigger.dataset.count = '0';
+    trigger.addEventListener('click', () => {
+        historyPanel.classList.toggle('dice-history-active');
+    });
+    document.body.append(trigger);
+    historyTrigger = trigger;
+
+    const panel = document.createElement('div');
+    panel.classList.add('dice-history-panel');
+
+    const header = document.createElement('div');
+    header.classList.add('dice-history-header');
+
+    const title = document.createElement('span');
+    title.textContent = 'Roll History';
+    title.classList.add('dice-history-title');
+    header.append(title);
+
+    const clearBtn = document.createElement('button');
+    clearBtn.classList.add('menu_button', 'dice-history-clear');
+    clearBtn.innerHTML = '<i class="fa-solid fa-trash"></i>';
+    clearBtn.title = 'Clear history';
+    clearBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        rollHistory.length = 0;
+        updateRollHistoryPanel();
+    });
+    header.append(clearBtn);
+
+    panel.append(header);
+
+    const list = document.createElement('div');
+    list.classList.add('dice-history-list');
+    panel.append(list);
+
+    const empty = document.createElement('div');
+    empty.classList.add('dice-history-empty');
+    empty.textContent = 'No rolls yet';
+    panel.append(empty);
+
+    document.body.append(panel);
+    historyPanel = panel;
+
+    document.addEventListener('click', (e) => {
+        if (!panel.contains(e.target) && !trigger.contains(e.target)) {
+            panel.classList.remove('dice-history-active');
+        }
+    });
+}
+
+function updateRollHistoryPanel() {
+    if (!historyPanel || !historyTrigger) return;
+
+    historyTrigger.dataset.count = String(rollHistory.length);
+
+    const list = historyPanel.querySelector('.dice-history-list');
+    const empty = historyPanel.querySelector('.dice-history-empty');
+    list.innerHTML = '';
+
+    if (rollHistory.length === 0) {
+        empty.style.display = '';
+        return;
+    }
+    empty.style.display = 'none';
+
+    const modeLabels = { smallsys: 'Private', sys: 'Narrator', char: 'Character', user: 'User', none: 'Quiet' };
+
+    for (let i = rollHistory.length - 1; i >= 0; i--) {
+        const entry = rollHistory[i];
+        const row = document.createElement('div');
+        row.classList.add('dice-history-entry');
+
+        const time = new Date(entry.timestamp);
+        const timeStr = time.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+
+        const meta = document.createElement('div');
+        meta.classList.add('dice-history-meta');
+        meta.textContent = `${timeStr} · ${modeLabels[entry.sendMode] || entry.sendMode}`;
+        row.append(meta);
+
+        const main = document.createElement('div');
+        main.classList.add('dice-history-main');
+
+        const label = entry.description ? `${entry.description}: ` : '';
+        main.innerHTML = `<span class="dice-history-formula">${label}${entry.formula}</span>` +
+            ` = <strong class="dice-history-total">${entry.total}</strong>` +
+            ` <span class="dice-history-detail">(${entry.output})</span>`;
+        row.append(main);
+
+        list.append(row);
     }
 }
 
@@ -234,12 +350,20 @@ async function addDiceRollButton() {
         e.stopPropagation();
         const value = $(this).val().trim();
         if (value) {
-            // Parse the input into formula array (simple split on spaces for now)
             diceFormula = value.split(/\s+/).filter(Boolean);
             rollButton.prop('disabled', false);
         } else {
             diceFormula = [];
             rollButton.prop('disabled', true);
+        }
+    });
+
+    // Enter key triggers roll from formula or description inputs
+    formulaDisplay.add(descriptionInput).on('keydown', function (e) {
+        if (e.key === 'Enter' && diceFormula.length > 0) {
+            e.preventDefault();
+            e.stopPropagation();
+            rollButton.trigger('click');
         }
     });
 
@@ -553,17 +677,27 @@ jQuery(async function () {
         await loadDiceRoller();
         
         await addDiceRollButton();
+        initRollHistoryPanel();
         registerFunctionTools();
         registerMacros();
+        const sendModeEnum = () => [
+            new SlashCommandEnumValue('smallsys', 'Private — user only, not visible to LLM'),
+            new SlashCommandEnumValue('sys', 'Narrator — visible to LLM, triggers response'),
+            new SlashCommandEnumValue('char', 'Character — visible to LLM'),
+            new SlashCommandEnumValue('user', 'User — visible to LLM, triggers response'),
+            new SlashCommandEnumValue('none', 'Quiet — no chat message'),
+        ];
+
         SlashCommandParser.addCommandObject(SlashCommand.fromProps({
             name: 'roll',
             aliases: ['r', 'rolls'],
             callback: (args, value) => {
                 const quiet = isTrueBoolean(String(args.quiet));
                 const sendMode = args.send ? String(args.send).toLowerCase() : 'smallsys';
-                return doDiceRoll(String(value), quiet, '', sendMode);
+                const description = args.desc ? String(args.desc) : '';
+                return doDiceRoll(String(value), quiet, description, sendMode);
             },
-            helpString: 'Roll the dice. Place options before the formula: <code>/roll send=sys 2d6</code>. Send modes: <code>sys</code> (narrator, visible to LLM), <code>char</code> (as character), <code>user</code> (as user), <code>smallsys</code> (default, user only), <code>none</code> (quiet).',
+            helpString: 'Roll the dice. Place options before the formula: <code>/roll send=sys desc="Attack Roll" 1d20+5</code>. Send modes: <code>sys</code> (narrator, visible to LLM), <code>char</code> (as character), <code>user</code> (as user), <code>smallsys</code> (default, user only), <code>none</code> (quiet).',
             returns: 'roll result',
             namedArgumentList: [
                 SlashCommandNamedArgument.fromProps({
@@ -572,6 +706,13 @@ jQuery(async function () {
                     isRequired: false,
                     typeList: [ARGUMENT_TYPE.STRING],
                     defaultValue: 'smallsys',
+                    enumProvider: sendModeEnum,
+                }),
+                SlashCommandNamedArgument.fromProps({
+                    name: 'desc',
+                    description: 'Label for the roll, e.g. "Attack Roll" or "Initiative"',
+                    isRequired: false,
+                    typeList: [ARGUMENT_TYPE.STRING],
                 }),
                 SlashCommandNamedArgument.fromProps({
                     name: 'quiet',

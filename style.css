@@ -178,3 +178,144 @@
     outline: 1px solid var(--SmartThemeBorderColor);
     outline-offset: 1px;
 }
+
+/* Roll History Floating Panel */
+.dice-history-trigger {
+    position: fixed;
+    bottom: 2.5em;
+    left: 0.4em;
+    font-size: 1.6em;
+    opacity: 0.3;
+    cursor: pointer;
+    z-index: 99998;
+    filter: drop-shadow(1px 2px 3px black);
+    transition: opacity 200ms;
+}
+
+.dice-history-trigger:hover {
+    opacity: 0.7;
+}
+
+.dice-history-trigger:not([data-count="0"])::after {
+    content: attr(data-count);
+    position: absolute;
+    bottom: -2px;
+    right: -4px;
+    font-size: 10px;
+    font-weight: bold;
+    font-family: var(--mainFontFamily);
+    color: white;
+    background: var(--SmartThemeQuoteColor, #b08030);
+    line-height: 1;
+    padding: 2px 4px;
+    border-radius: 8px;
+    min-width: 14px;
+    text-align: center;
+    pointer-events: none;
+}
+
+.dice-history-panel {
+    display: none;
+    position: fixed;
+    bottom: 4.5em;
+    left: 0.4em;
+    width: 340px;
+    max-height: 50vh;
+    z-index: 30000;
+    background: var(--SmartThemeBlurTintColor);
+    backdrop-filter: blur(var(--SmartThemeBlurStrength));
+    border: 1px solid var(--SmartThemeBorderColor);
+    border-radius: 10px;
+    padding: 0;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+    flex-direction: column;
+    overflow: hidden;
+}
+
+.dice-history-panel.dice-history-active {
+    display: flex;
+}
+
+.dice-history-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 8px 12px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    flex-shrink: 0;
+}
+
+.dice-history-title {
+    font-size: 12px;
+    font-weight: bold;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    opacity: 0.7;
+}
+
+.dice-history-clear {
+    padding: 2px 6px !important;
+    min-width: unset !important;
+    font-size: 11px;
+    opacity: 0.5;
+}
+
+.dice-history-clear:hover {
+    opacity: 1;
+}
+
+.dice-history-list {
+    overflow-y: auto;
+    flex: 1;
+    padding: 6px 0;
+}
+
+.dice-history-entry {
+    padding: 6px 12px;
+    transition: background 150ms;
+}
+
+.dice-history-entry:hover {
+    background: rgba(255, 255, 255, 0.05);
+}
+
+.dice-history-meta {
+    font-size: 10px;
+    opacity: 0.5;
+    margin-bottom: 2px;
+}
+
+.dice-history-main {
+    font-size: 13px;
+}
+
+.dice-history-formula {
+    opacity: 0.7;
+    font-family: monospace;
+}
+
+.dice-history-total {
+    color: var(--SmartThemeQuoteColor, #b08030);
+    font-size: 14px;
+}
+
+.dice-history-detail {
+    font-size: 11px;
+    opacity: 0.5;
+}
+
+.dice-history-empty {
+    padding: 20px;
+    text-align: center;
+    opacity: 0.4;
+    font-style: italic;
+    font-size: 13px;
+}
+
+@media screen and (max-width: 600px) {
+    .dice-history-panel {
+        width: calc(100vw - 20px);
+        left: 10px;
+        right: 10px;
+    }
+}

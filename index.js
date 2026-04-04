@@ -164,7 +164,7 @@ async function doDiceRoll(customDiceFormula, quiet = false, description = '', se
                         name: '',
                         is_user: false,
                         is_system: false,
-                        send_date: context.getMessageTimeStamp(),
+                        send_date: new Date().toLocaleString(),
                         mes: messageText,
                         force_avatar: true,
                         extra: { type: 'narrator' },
@@ -175,7 +175,7 @@ async function doDiceRoll(customDiceFormula, quiet = false, description = '', se
                         name: context.name2,
                         is_user: false,
                         is_system: false,
-                        send_date: context.getMessageTimeStamp(),
+                        send_date: new Date().toLocaleString(),
                         mes: messageText,
                         force_avatar: true,
                     });
@@ -185,7 +185,7 @@ async function doDiceRoll(customDiceFormula, quiet = false, description = '', se
                         name: context.name1,
                         is_user: true,
                         is_system: false,
-                        send_date: context.getMessageTimeStamp(),
+                        send_date: new Date().toLocaleString(),
                         mes: messageText,
                         force_avatar: true,
                     });
@@ -572,7 +572,7 @@ jQuery(async function () {
                 const sendMode = args.send ? String(args.send).toLowerCase() : 'smallsys';
                 return doDiceRoll(String(value), quiet, '', sendMode);
             },
-            helpString: 'Roll the dice using various formats. Use <code>send=</code> to control how the result appears in chat: <code>sys</code> (narrator, visible to LLM), <code>char</code> (as character), <code>user</code> (as user), <code>smallsys</code> (default, user only), <code>none</code> (quiet).',
+            helpString: 'Roll the dice. Place options before the formula: <code>/roll send=sys 2d6</code>. Send modes: <code>sys</code> (narrator, visible to LLM), <code>char</code> (as character), <code>user</code> (as user), <code>smallsys</code> (default, user only), <code>none</code> (quiet).',
             returns: 'roll result',
             namedArgumentList: [
                 SlashCommandNamedArgument.fromProps({

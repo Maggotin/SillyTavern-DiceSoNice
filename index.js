@@ -160,35 +160,13 @@ async function doDiceRoll(customDiceFormula, quiet = false, description = '', se
 
             switch (effectiveMode) {
                 case 'sys':
-                    context.addOneMessage({
-                        name: '',
-                        is_user: false,
-                        is_system: false,
-                        send_date: new Date().toLocaleString(),
-                        mes: messageText,
-                        force_avatar: true,
-                        extra: { type: 'narrator' },
-                    });
+                    await context.executeSlashCommandsWithOptions(`/sys ${messageText}`);
                     break;
                 case 'char':
-                    context.addOneMessage({
-                        name: context.name2,
-                        is_user: false,
-                        is_system: false,
-                        send_date: new Date().toLocaleString(),
-                        mes: messageText,
-                        force_avatar: true,
-                    });
+                    await context.executeSlashCommandsWithOptions(`/sendas name="${context.name2}" ${messageText}`);
                     break;
                 case 'user':
-                    context.addOneMessage({
-                        name: context.name1,
-                        is_user: true,
-                        is_system: false,
-                        send_date: new Date().toLocaleString(),
-                        mes: messageText,
-                        force_avatar: true,
-                    });
+                    await context.executeSlashCommandsWithOptions(`/send ${messageText}`);
                     break;
                 case 'smallsys':
                 default:

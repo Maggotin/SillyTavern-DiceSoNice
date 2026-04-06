@@ -1,4 +1,4 @@
-import { animation_duration } from '../../../../script.js';
+import { animation_duration, systemUserName } from '../../../../script.js';
 import { getContext, renderExtensionTemplateAsync } from '../../../extensions.js';
 import { POPUP_TYPE, callGenericPopup } from '../../../popup.js';
 import { SlashCommand } from '../../../slash-commands/SlashCommand.js';
@@ -126,6 +126,39 @@ function getDiceRoll() {
 }
 
 /**
+ * Add a message to chat using the native API, bypassing the STscript parser.
+ * Prevents slash-command injection from user-controlled text.
+ * @param {string} text Message content
+ * @param {'narrator'|'char'|'user'} type Sender type
+ */
+async function sendChatMessage(text, type = 'narrator') {
+    const context = getContext();
+    const { eventSource, event_types } = context;
+
+    const isUser = type === 'user';
+    const name = type === 'user' ? context.name1
+        : type === 'char' ? context.name2
+        : systemUserName;
+
+    const message = {
+        name,
+        is_user: isUser,
+        is_system: false,
+        send_date: new Date().toLocaleString(),
+        mes: text,
+        extra: {},
+    };
+
+    context.chat.push(message);
+    const messageId = context.chat.length - 1;
+    await eventSource.emit(event_types.MESSAGE_RECEIVED, messageId, 'extension');
+    context.addOneMessage(message);
+    const renderEvent = isUser ? event_types.USER_MESSAGE_RENDERED : event_types.CHARACTER_MESSAGE_RENDERED;
+    await eventSource.emit(renderEvent, messageId, 'extension');
+    await context.saveChat();
+}
+
+/**
  * Roll the dice using RPG Dice Roller library.
  * @param {string} customDiceFormula Dice formula
  * @param {boolean} quiet Suppress chat output (legacy — prefer sendMode='none')
@@ -176,14 +209,14 @@ async function doDiceRoll(customDiceFormula, quiet = false, description = '', se
 
             switch (effectiveMode) {
                 case 'sys':
-                    await context.executeSlashCommandsWithOptions(`/sys ${messageText}`);
+                    await sendChatMessage(messageText, 'narrator');
                     await context.executeSlashCommandsWithOptions('/trigger');
                     break;
                 case 'char':
-                    await context.executeSlashCommandsWithOptions(`/sendas name="${context.name2}" ${messageText}`);
+                    await sendChatMessage(messageText, 'char');
                     break;
                 case 'user':
-                    await context.executeSlashCommandsWithOptions(`/send ${messageText}`);
+                    await sendChatMessage(messageText, 'user');
                     await context.executeSlashCommandsWithOptions('/trigger');
                     break;
                 case 'smallsys':
@@ -291,10 +324,25 @@ function updateRollHistoryPanel() {
         const main = document.createElement('div');
         main.classList.add('dice-history-main');
 
-        const label = entry.description ? `${entry.description}: ` : '';
-        main.innerHTML = `<span class="dice-history-formula">${label}${entry.formula}</span>` +
-            ` = <strong class="dice-history-total">${entry.total}</strong>` +
-            ` <span class="dice-history-detail">(${entry.output})</span>`;
+        const formulaSpan = document.createElement('span');
+        formulaSpan.classList.add('dice-history-formula');
+        formulaSpan.textContent = entry.description ? `${entry.description}: ${entry.formula}` : entry.formula;
+        main.append(formulaSpan);
+
+        main.append(' = ');
+
+        const totalEl = document.createElement('strong');
+        totalEl.classList.add('dice-history-total');
+        totalEl.textContent = String(entry.total);
+        main.append(totalEl);
+
+        main.append(' ');
+
+        const detailSpan = document.createElement('span');
+        detailSpan.classList.add('dice-history-detail');
+        detailSpan.textContent = `(${entry.output})`;
+        main.append(detailSpan);
+
         row.append(main);
 
         list.append(row);

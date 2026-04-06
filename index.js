@@ -10,6 +10,7 @@ import { isTrueBoolean } from '../../../utils.js';
 export { MODULE_NAME };
 
 const MODULE_NAME = 'dice';
+const VERSION = '1.0.0-alpha.1';
 const TEMPLATE_PATH = 'third-party/SillyTavern-DiceSoNice';
 const MAX_ROLL_HISTORY = 50;
 const rollHistory = [];
@@ -167,7 +168,7 @@ async function sendChatMessage(text, type = 'narrator') {
  * @returns {Promise<string>} Roll result
  */
 async function doDiceRoll(customDiceFormula, quiet = false, description = '', sendMode = 'smallsys') {
-    let value = typeof customDiceFormula === 'string' ? customDiceFormula.trim() : $(this).data('value');
+    let value = String(customDiceFormula ?? '').trim();
 
     if (value == 'custom') {
         value = await callGenericPopup('Enter the dice formula:<br><i>(for example, <tt>2d6</tt>)</i>', POPUP_TYPE.INPUT, '', { okButton: 'Roll', cancelButton: 'Cancel' });
@@ -416,23 +417,37 @@ async function addDiceRollButton() {
     });
 
     function addToFormula(value) {
-        // Check if clicking same die type consecutively - consolidate quantity
         if (diceFormula.length > 0) {
             const lastItem = diceFormula[diceFormula.length - 1];
+
+            // Stack numeric modifiers: clicking +5 twice → +10 instead of +5 +5
+            const newMod = value.match(/^([+-])(\d+)$/);
+            const lastMod = lastItem.match(/^([+-])(\d+)$/);
+            if (newMod && lastMod) {
+                const sum = (lastMod[1] === '-' ? -1 : 1) * parseInt(lastMod[2])
+                          + (newMod[1] === '-' ? -1 : 1) * parseInt(newMod[2]);
+                if (sum === 0) {
+                    diceFormula.pop();
+                } else {
+                    diceFormula[diceFormula.length - 1] = `${sum > 0 ? '+' : '-'}${Math.abs(sum)}`;
+                }
+                updateFormulaDisplay();
+                return;
+            }
+
+            // Consolidate same die type: clicking d6 twice → 2d6
             const diceMatch = lastItem.match(/^(\d*)d(\d+|F|\%)$/);
             const isDieRoll = value.match(/^d(\d+|F|\%)$/);
-            
-            // If last item is a die and we're adding the same die type, consolidate
             if (diceMatch && isDieRoll && value === `d${diceMatch[2]}`) {
                 const qty = parseInt(diceMatch[1] || '1') + 1;
                 diceFormula[diceFormula.length - 1] = `${qty}d${diceMatch[2]}`;
                 updateFormulaDisplay();
                 return;
             }
-            
-            // Smart formatting: add '+' between dice/modifiers if needed
-            const needsOperator = !lastItem.match(/[+\-]$/) && !value.match(/^[+\-!khdl]/);
-            if (needsOperator && !value.match(/^[+\-!khdl]/)) {
+
+            // Smart formatting: add '+' between terms if needed
+            const needsOperator = !lastItem.match(/[+\-]$/) && !value.match(/^[+\-!khl]/);
+            if (needsOperator) {
                 diceFormula.push('+');
             }
         }
@@ -479,10 +494,10 @@ async function addDiceRollButton() {
         addToFormula(die);
     });
 
-    // Modifier buttons
+    // Modifier buttons (String() guards against jQuery .data() coercing "-1" to number -1)
     $('.dice-modifier-btn').on('click', function (e) {
         e.stopPropagation();
-        const modifier = $(this).data('modifier');
+        const modifier = String($(this).data('modifier'));
         addToFormula(modifier);
     });
 
@@ -723,7 +738,15 @@ jQuery(async function () {
     try {
         // Load dice roller library first
         await loadDiceRoller();
-        
+
+        // Show update notification on version change
+        const settings = getSettings();
+        if (settings.lastVersion && settings.lastVersion !== VERSION) {
+            toastr.success(`DiceSoNice updated to v${VERSION}`, 'Extension Updated');
+        }
+        settings.lastVersion = VERSION;
+        SillyTavern.getContext().saveSettingsDebounced();
+
         await addDiceRollButton();
         initRollHistoryPanel();
         registerFunctionTools();

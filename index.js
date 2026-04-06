@@ -446,7 +446,7 @@ async function addDiceRollButton() {
             }
 
             // Smart formatting: add '+' between terms if needed
-            const needsOperator = !lastItem.match(/[+\-]$/) && !value.match(/^[+\-!khl]/);
+            const needsOperator = !lastItem.match(/[+\-]$/) && !value.match(/^[+\-!khlrum]/);
             if (needsOperator) {
                 diceFormula.push('+');
             }
@@ -527,6 +527,17 @@ async function addDiceRollButton() {
             showSelectorPanel('Skill Check', skills.map(s => ({ label: s, value: s })), (skill) => {
                 diceFormula = ['d20'];
                 descriptionInput.val(skill);
+                updateFormulaDisplay();
+            });
+            return;
+        } else if (requiresSelection === 'save') {
+            const saves = [
+                'Strength', 'Dexterity', 'Constitution', 'Intelligence', 'Wisdom', 'Charisma',
+                'Concentration',
+            ];
+            showSelectorPanel('Saving Throw', saves.map(s => ({ label: s, value: s })), (save) => {
+                diceFormula = ['d20'];
+                descriptionInput.val(`${save} Saving Throw`);
                 updateFormulaDisplay();
             });
             return;

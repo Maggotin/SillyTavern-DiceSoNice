@@ -62,6 +62,10 @@
                     <button class="menu_button dice-modifier-btn" data-modifier="!" title="Exploding dice">!</button>
                     <button class="menu_button dice-modifier-btn" data-modifier="kh1" title="Keep highest 1">kh</button>
                     <button class="menu_button dice-modifier-btn" data-modifier="kl1" title="Keep lowest 1">kl</button>
+                    <button class="menu_button dice-modifier-btn" data-modifier="r1" title="Reroll 1s (keep rerolling)">r1</button>
+                    <button class="menu_button dice-modifier-btn" data-modifier="ro1" title="Reroll 1s once (Halfling Lucky)">ro1</button>
+                    <button class="menu_button dice-modifier-btn" data-modifier="ro<=2" title="Reroll 1-2 once (Great Weapon Fighting)">ro≤2</button>
+                    <button class="menu_button dice-modifier-btn" data-modifier="min1" title="Treat rolls below 1 as 1">min1</button>
                 </div>
             </div>
 
@@ -73,7 +77,7 @@
                     <button class="menu_button dice-preset-btn" data-formula="2d20kl1" data-description="Disadvantage" title="Roll with disadvantage">Disadvantage</button>
                     <button class="menu_button dice-preset-btn" data-requires-selection="ability" title="Choose ability">Ability Check</button>
                     <button class="menu_button dice-preset-btn" data-requires-selection="skill" title="Choose skill">Skill Check</button>
-                    <button class="menu_button dice-preset-btn" data-formula="d20" data-description="Saving Throw" title="Saving throw">Save</button>
+                    <button class="menu_button dice-preset-btn" data-requires-selection="save" title="Choose saving throw">Save</button>
                     <button class="menu_button dice-preset-btn" data-formula="d20" data-description="Initiative" title="Initiative roll">Initiative</button>
                     <button class="menu_button dice-preset-btn" data-formula="d20" data-description="Death Saving Throw" title="Death save">Death Save</button>
                 </div>
@@ -87,7 +91,7 @@
                     <button class="menu_button dice-preset-btn" data-formula="d100" data-description="Percentile" title="d100 roll">Percentile</button>
                     <button class="menu_button dice-preset-btn" data-formula="d100" data-description="Wild Magic Surge" title="Wild magic surge">Wild Magic</button>
                     <button class="menu_button dice-preset-btn" data-requires-selection="hitdice" title="Choose hit die">Hit Dice</button>
-                    <button class="menu_button dice-preset-btn" data-formula="3d6" data-description="Ability Score" title="Roll 3d6 for ability">3d6 Stat</button>
+                    <button class="menu_button dice-preset-btn" data-formula="4d6kh3" data-description="Ability Score" title="Roll 4d6, keep highest 3">4d6kh3 Stat</button>
                 </div>
             </div>
 

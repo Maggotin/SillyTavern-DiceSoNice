@@ -4,11 +4,9 @@ A comprehensive dice rolling extension for SillyTavern with support for standard
 
 ## How to install
 
-Install via the built-in "Download Extensions and Assets" tool. Or use a direct link:
+Install: Extensions → Install extension → paste this URL:
 
-```txt
 https://github.com/Maggotin/SillyTavern-DiceSoNice
-```
 
 ## How to use
 
@@ -17,9 +15,10 @@ This extension provides four ways to roll dice, each suited for different situat
 | Method | Best for | Output |
 |---|---|---|
 | `{{roll}}` / `{{dice}}` macro | Embedding results in prompts, cards, STscript | Number only |
-| `/roll` slash command | Rolling in chat with visible results | Full breakdown in chat |
+| `/roll` slash command | Rolling in chat with configurable send mode | Full breakdown in chat |
 | Function tool | AI-triggered rolls during conversation | Result returned to AI |
-| Wand menu | Quick manual rolls via UI | Full breakdown in chat |
+| Wand menu | Quick manual rolls via UI with send mode picker | Full breakdown in chat |
+| Roll history | Reviewing past rolls | Floating panel |
 
 ### `{{roll}}` / `{{dice}}` macro
 
@@ -58,23 +57,45 @@ They deal {{roll 2d6+3}} slashing damage.
 
 ### `/roll` slash command
 
-Rolls dice and posts the result as a system message in chat with a full breakdown.
+Rolls dice and posts the result in chat with a full breakdown. Named arguments must come before the formula.
 
 ```txt
-/roll 2d6                    Roll two 6-sided dice
-/r 1d20+5                    Short alias
-/roll 4d6kh3                 Roll 4d6, keep highest 3
-/roll 3d8 quiet:true         Roll without posting to chat
-/roll 2d6+3 # Fire damage   Roll with a description label
+/roll 2d6                              Roll two 6-sided dice
+/r 1d20+5                              Short alias
+/roll 4d6kh3                           Roll 4d6, keep highest 3
+/roll 2d6+3 # Fire damage              Roll with a description label
+/roll send=sys 1d20+5                  Roll as narrator (visible to LLM, triggers response)
+/roll send=user desc="Attack" 1d20+5   Roll as user with a label
+/roll send=none 2d6                    Roll quietly (no chat message)
 ```
 
-The `/roll` command shows detailed output including which dice were kept, dropped, exploded, etc. Use `quiet:true` to suppress the chat message and just get the value (useful in STscript pipelines).
+#### Send modes
+
+Control how the roll result appears in chat and whether the LLM can see it:
+
+| Mode | Chat appearance | LLM sees it? | Auto-triggers response? |
+|------|----------------|-------------|------------------------|
+| `smallsys` | Small system message (default) | No | No |
+| `sys` | Narrator message | Yes | Yes |
+| `char` | Character message | Yes | No |
+| `user` | User message | Yes | Yes |
+| `none` | No message | No | No |
+
+#### Named arguments
+
+| Argument | Description |
+|----------|-------------|
+| `send=` | Send mode (see above). Default: `smallsys` |
+| `desc=` | Label for the roll, e.g. `desc="Attack Roll"` |
+| `quiet=` | Legacy — same as `send=none`. Default: `false` |
+
+The `/roll` command shows detailed output including which dice were kept, dropped, exploded, etc. Use `send=none` or `quiet=true` to suppress the chat message and just get the value (useful in STscript pipelines).
 
 **STscript with /roll:**
 
 ```stscript
-/roll 1d20+5 quiet:true | /setvar key=attack
-/roll 2d6+3 quiet:true | /setvar key=damage
+/roll send=none 1d20+5 | /setvar key=attack
+/roll send=none 2d6+3 | /setvar key=damage
 /sys Attack: {{getvar::attack}}, Damage: {{getvar::damage}}
 ```
 
@@ -93,11 +114,20 @@ Roll some fudge dice
 
 ### Wand menu
 
-A visual dice roller in the extensions wand menu.
+A visual dice builder in the extensions wand menu.
 
-1. Open the wand menu.
-2. Click on the "Roll Dice" item.
-3. Use the dice builder to construct a formula, or enter a custom one.
+1. Open the wand menu and click "Roll Dice".
+2. Build a formula using the dice type buttons, modifiers, and D&D presets — or type directly into the formula field.
+3. Optionally add a description and choose a **Send As** mode (Private, Narrator, Character, User, or Quiet).
+4. Click **Roll** or press **Enter**.
+
+The send mode selection persists across rolls while the menu is open.
+
+### Roll history
+
+A floating scroll icon appears in the bottom-left corner of the screen. Click it to open a panel showing your recent rolls (up to 50) in reverse chronological order.
+
+Each entry shows the timestamp, send mode, formula, description, result total, and full breakdown. Use the trash icon to clear the history. Roll history is in-memory only and clears on page reload.
 
 ---
 

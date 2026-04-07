@@ -164,7 +164,7 @@ async function sendChatMessage(text, type = 'narrator') {
  * @param {string} customDiceFormula Dice formula
  * @param {boolean} quiet Suppress chat output (legacy — prefer sendMode='none')
  * @param {string} description Optional roll description
- * @param {'smallsys'|'sys'|'char'|'user'|'none'} sendMode How to send the result to chat
+ * @param {'smallsys'|'sys'|'char'|'user'|'input'|'none'} sendMode How to send the result to chat
  * @returns {Promise<string>} Roll result
  */
 async function doDiceRoll(customDiceFormula, quiet = false, description = '', sendMode = 'smallsys') {
@@ -220,6 +220,16 @@ async function doDiceRoll(customDiceFormula, quiet = false, description = '', se
                     await sendChatMessage(messageText, 'user');
                     await context.executeSlashCommandsWithOptions('/trigger');
                     break;
+                case 'input': {
+                    const textarea = document.getElementById('send_textarea');
+                    if (textarea) {
+                        const current = textarea.value;
+                        textarea.value = current ? `${current}\n${messageText}` : messageText;
+                        textarea.dispatchEvent(new Event('input', { bubbles: true }));
+                        textarea.focus();
+                    }
+                    break;
+                }
                 case 'smallsys':
                 default:
                     context.sendSystemMessage('generic', messageText, { isSmallSys: true });
@@ -307,7 +317,7 @@ function updateRollHistoryPanel() {
     }
     empty.style.display = 'none';
 
-    const modeLabels = { smallsys: 'Private', sys: 'Narrator', char: 'Character', user: 'User', none: 'Quiet' };
+    const modeLabels = { smallsys: 'Private', sys: 'Narrator', char: 'Character', user: 'User', input: 'Input', none: 'Quiet' };
 
     for (let i = rollHistory.length - 1; i >= 0; i--) {
         const entry = rollHistory[i];
@@ -767,6 +777,7 @@ jQuery(async function () {
             new SlashCommandEnumValue('sys', 'Narrator — visible to LLM, triggers response'),
             new SlashCommandEnumValue('char', 'Character — visible to LLM'),
             new SlashCommandEnumValue('user', 'User — visible to LLM, triggers response'),
+            new SlashCommandEnumValue('input', 'Input — place in chat input for editing'),
             new SlashCommandEnumValue('none', 'Quiet — no chat message'),
         ];
 
@@ -779,12 +790,12 @@ jQuery(async function () {
                 const description = args.desc ? String(args.desc) : '';
                 return doDiceRoll(String(value), quiet, description, sendMode);
             },
-            helpString: 'Roll the dice. Place options before the formula: <code>/roll send=sys desc="Attack Roll" 1d20+5</code>. Send modes: <code>sys</code> (narrator, visible to LLM), <code>char</code> (as character), <code>user</code> (as user), <code>smallsys</code> (default, user only), <code>none</code> (quiet).',
+            helpString: 'Roll the dice. Place options before the formula: <code>/roll send=sys desc="Attack Roll" 1d20+5</code>. Send modes: <code>sys</code> (narrator, visible to LLM), <code>char</code> (as character), <code>user</code> (as user), <code>input</code> (place in chat input for editing), <code>smallsys</code> (default, user only), <code>none</code> (quiet).',
             returns: 'roll result',
             namedArgumentList: [
                 SlashCommandNamedArgument.fromProps({
                     name: 'send',
-                    description: 'How to send the result: sys (narrator/visible to LLM), char (as character), user (as user), smallsys (default/user only), none (quiet)',
+                    description: 'How to send the result: sys (narrator/visible to LLM), char (as character), user (as user), input (place in chat input), smallsys (default/user only), none (quiet)',
                     isRequired: false,
                     typeList: [ARGUMENT_TYPE.STRING],
                     defaultValue: 'smallsys',

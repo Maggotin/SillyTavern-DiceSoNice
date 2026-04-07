@@ -10,10 +10,22 @@ import { isTrueBoolean } from '../../../utils.js';
 export { MODULE_NAME };
 
 const MODULE_NAME = 'dice';
-const VERSION = '1.0.0-alpha.1';
 const TEMPLATE_PATH = 'third-party/SillyTavern-DiceSoNice';
 const MAX_ROLL_HISTORY = 50;
 const rollHistory = [];
+
+async function getManifestVersion() {
+    try {
+        const resp = await fetch(`/scripts/extensions/${TEMPLATE_PATH}/manifest.json?t=${Date.now()}`);
+        if (resp.ok) {
+            const manifest = await resp.json();
+            return manifest.version || 'unknown';
+        }
+    } catch (e) {
+        console.warn('Dice: Could not read manifest version', e);
+    }
+    return 'unknown';
+}
 
 // Define default settings
 const defaultSettings = Object.freeze({
@@ -762,10 +774,11 @@ jQuery(async function () {
 
         // Show update notification on version change
         const settings = getSettings();
-        if (settings.lastVersion && settings.lastVersion !== VERSION) {
-            toastr.success(`DiceSoNice updated to v${VERSION}`, 'Extension Updated');
+        const currentVersion = await getManifestVersion();
+        if (settings.lastVersion && settings.lastVersion !== currentVersion) {
+            toastr.success(`DiceSoNice updated to v${currentVersion}`, 'Extension Updated');
         }
-        settings.lastVersion = VERSION;
+        settings.lastVersion = currentVersion;
         SillyTavern.getContext().saveSettingsDebounced();
 
         await addDiceRollButton();

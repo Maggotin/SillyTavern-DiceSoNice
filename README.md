@@ -99,7 +99,9 @@ The `/roll` command shows detailed output including which dice were kept, droppe
 /sys Attack: {{getvar::attack}}, Damage: {{getvar::damage}}
 ```
 
-### Function tool (AI integration)
+### Via the function tool (AI integration)
+
+Disabled by default. To enable, go to extension settings, find "D&D Dice" and enable the "Use function tool" option.
 
 Requires a compatible Chat Completion backend. See [Function Calling](https://docs.sillytavern.app/for-contributors/function-calling/) for more information. Enable in the extension settings.
 
